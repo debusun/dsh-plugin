@@ -3943,7 +3943,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
     }
 
     // 危险删除按钮:首点进武装态(垃圾桶变"确认删除"文字),再点才执行,超时自动解除
-    function DeleteArmedButton({ labelKey, confirmKey, onConfirm, showLabel = false, t = defaultT }) {
+    function DeleteArmedButton({ labelKey, confirmKey, onConfirm, showLabel = false, tone = 'default', t = defaultT }) {
       const [armed, setArmed] = useState(false)
       const armedTimerRef = useRef(null)
       useEffect(() => () => {
@@ -3960,7 +3960,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
         onConfirm()
       }
       return h('button', {
-        className: cx('ud-btn ud-btn--text', armed && 'ud-delete-armed'), type: 'button', onClick: click,
+        className: cx('ud-btn ud-btn--text', tone === 'danger' && 'ud-btn--danger-text', armed && 'ud-delete-armed'), type: 'button', onClick: click,
         'aria-label': t(labelKey), title: t(labelKey),
       }, armed ? t(confirmKey) : showLabel ? t(labelKey) : h(Icon, { paths: ICONS.trash }))
     }
@@ -4150,17 +4150,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pref-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ud-pref-title{font-size:13px;color:var(--dsw-alias-label-primary)}
 .ud-pref-desc{font-size:12px;color:var(--dsw-alias-label-tertiary)}
-.ud-rule{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-sm);padding:10px 12px}
+.ud-rule{display:flex;flex-direction:column;gap:8px;border-radius:var(--dsw-radius-sm);padding:10px 12px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 55%,transparent)}
 .ud-rule-group{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);padding:10px 12px}
 .ud-rule-group-head{display:flex;align-items:flex-end;gap:8px}
 .ud-rule-group-head .ud-field{flex:1}
 .ud-rule-group-slots{display:flex;flex-direction:column;gap:8px}
 .ud-rule-group-slots .ud-rule{background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 40%,transparent)}
-.ud-rule-default{border-style:dashed}
+.ud-rule-default{background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 72%,transparent)}
+.ud-rule>.ud-pricing-line .ud-btn--text{margin-inline-start:auto}
 .ud-slot-head{display:flex;align-items:flex-end;gap:8px}
 .ud-slot-head .ud-price-grid{flex:1}
-.ud-rule-head{display:flex;align-items:flex-end;gap:8px}
-.ud-rule-head .ud-field{flex:1}
 .ud-rule-cond{font-size:11px;color:var(--dsw-alias-label-tertiary)}
 .ud-rule-conds{display:flex;flex-direction:column;gap:6px}
 .ud-cond{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -4173,7 +4172,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .ud-field-label{font-size:11px;color:var(--dsw-alias-label-tertiary)}
 .ud-field-error{font-size:11px;color:var(--dsw-alias-state-error-primary)}
-.ud-input{border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:12px;padding:4px 6px;min-width:0;width:100%;box-sizing:border-box}
+.ud-input{border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px;padding:4px 8px;min-width:0;width:100%;box-sizing:border-box}
 .ud-price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .ud-price-grid .ud-input{text-align:right}
 .ud-price-input{position:relative;display:block}
@@ -4193,6 +4192,24 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-pattern .ud-field-error{grid-column:1/-1}
 .ud-pricing-card{padding:10px 12px;border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card);min-width:0}
 .ud-pricing-card > .ud-pricing-line,.ud-pricing-card > .ud-pricing-note{margin-top:6px}
+.ud-pricing-rules{display:grid;gap:16px;min-width:0}
+.ud-pricing-group{display:grid;gap:8px;min-width:0}
+.ud-pricing-group>h3{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary)}
+.ud-pricing-group-count{font-weight:400;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
+.ud-pricing-rule{padding:8px 12px}
+.ud-pricing-rule:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.ud-pricing-rule-head{display:flex;align-items:center;gap:8px;width:100%;min-height:24px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;border-radius:var(--dsw-radius-sm)}
+.ud-pricing-rule-head:hover{color:var(--dsw-alias-label-primary)}
+.ud-pricing-rule-no{flex:none;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
+.ud-pricing-rule-model{flex:1;min-width:0;font-size:13px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ud-pricing-rule-caret{flex:none;width:6px;height:6px;margin-inline-start:4px;border-right:1.5px solid var(--dsw-alias-label-tertiary);border-bottom:1.5px solid var(--dsw-alias-label-tertiary);transform:rotate(45deg);transition:transform .15s}
+.ud-pricing-rule-head[aria-expanded=true] .ud-pricing-rule-caret{transform:rotate(-135deg)}
+.ud-pricing-rule-foot{display:flex;align-items:center;gap:8px;margin-top:2px;min-width:0}
+.ud-pricing-rule-foot .ud-pricing-note{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary)}
+.ud-btn--danger-text{color:var(--dsw-alias-state-error-primary)}
+.ud-btn--danger-text:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary)}
+.ud-pricing-rule-tags{display:flex;flex:none;gap:6px}
+.ud-slot-no{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums;font-family:var(--ds-font-family-code)}
 .ud-pricing-board h3,.ud-pricing-board p,.ud-pricing-dialog h3,.ud-pricing-dialog p{margin:0}
 .ud-pricing-board h3,.ud-pricing-dialog h3{font-size:14px;line-height:22px}
 .ud-pricing-board code,.ud-pricing-dialog code{font-family:var(--ds-font-family-code);overflow-wrap:anywhere;min-width:0}
@@ -4200,21 +4217,23 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-summary dt,.ud-pricing-prices dt,.ud-pricing-note{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .ud-pricing-summary dd,.ud-pricing-prices dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .ud-pricing-summary dd{font-size:18px;font-weight:600;line-height:24px}
-.ud-pricing-card summary{cursor:pointer;overflow-wrap:anywhere;min-height:28px;line-height:28px}
-.ud-pricing-card summary .ud-pricing-chip{margin-inline-start:8px}
+.ud-pricing-card summary{cursor:pointer;overflow-wrap:anywhere}
 .ud-pricing-card summary:hover,.ud-pricing-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .ud-pricing-model{border-top:.5px solid var(--ud-card-border)}
 .ud-pricing-row{width:100%;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:6px 4px;min-height:32px;text-align:start;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .ud-pricing-row code{flex:1}
 .ud-pricing-row[aria-expanded=true],.ud-pricing-tree-row--winner{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent)}
-.ud-pricing-chip{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm);padding:2px 8px;font-size:12px;line-height:18px;overflow-wrap:anywhere}
-.ud-pricing-chip--button{border:1px solid var(--ud-card-border);cursor:pointer;color:inherit;min-height:28px}
-.ud-pricing-chip--button:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover)}
+.ud-pricing-chip{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm);padding:1px 6px;font-size:11px;line-height:16px;overflow-wrap:anywhere}
+.ud-pricing-chip--button{border:0;cursor:pointer;color:var(--dsw-alias-label-secondary);padding:1px 6px;font-size:11px;line-height:16px;font-family:inherit}
+.ud-pricing-chip--button:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .ud-pricing-chip--button:disabled{opacity:.5;cursor:not-allowed}
 .ud-pricing-warn{color:var(--dsw-alias-state-warn-primary)}
 .ud-pricing-tree{border-inline-start:2px solid var(--ud-card-border);padding-inline-start:8px;margin:8px 0 8px 8px}
 .ud-pricing-tree ul,.ud-pricing-rule-detail ul,.ud-pricing-dialog-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.ud-pricing-tree-row,.ud-pricing-rule-detail{display:grid;gap:8px;padding:8px;border-radius:var(--dsw-radius-sm)}
+.ud-pricing-tree-row{display:grid;gap:6px;padding:8px;border-radius:var(--dsw-radius-sm)}
+.ud-pricing-rule-detail{display:grid;gap:6px;margin:8px 0 0;padding-top:8px;border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-prices dt{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
+.ud-pricing-prices dd{font-size:13px;line-height:20px}
 .ud-pricing-dialog{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-shadow-lv3);font-size:14px;line-height:22px}
 .ud-pricing-dialog[open],.ud-pricing-dialog form{display:grid;gap:12px}
 .ud-pricing-dialog::backdrop{background:color-mix(in srgb,var(--dsw-alias-label-primary) 24%,transparent)}
@@ -4227,7 +4246,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 @media(min-width:620px){.ud-pricing-summary,.ud-pricing-prices{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:520px){.ud-pricing-board .ud-price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ud-pricing-board .ud-slot-head{flex-wrap:wrap}.ud-pricing-board .ud-slot-head .ud-price-grid{flex:1 0 100%}}
 @media(pointer:coarse){.ud-pricing-board :is(button,summary),.ud-pricing-dialog button{min-height:44px}}
-.ud-rule-add{border:1px dashed var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-tertiary);padding:8px;font-size:12px;cursor:pointer}
+.ud-rule-add{border:.5px dashed var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-tertiary);padding:5px 10px;font-size:12px;line-height:20px;text-align:start;cursor:pointer}
 .ud-rule-add:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 /* dock 内并列条目:官方 pill 满宽不动,空间不足时高收缩因子让自身先收缩(min-width:0 配合 ellipsis),挤压力不转嫁官方 */
 .ud-statsline-root{--ud-dock-gap:0px;text-align:center;max-width:var(--dsh-chat-content-width);box-sizing:border-box;flex:0 999 auto;min-width:0;padding:0;font-size:var(--dsh-content-font-size-secondary);line-height:calc(20px + var(--dsh-content-font-delta-secondary));color:var(--dsw-alias-label-tertiary);white-space:nowrap;text-overflow:ellipsis;margin:0;margin-left:calc(0px - var(--ud-dock-gap));text-indent:var(--ud-dock-gap);display:block;overflow:hidden}
@@ -5916,8 +5935,8 @@ ${HUD_CSS}
           }, '×') : null)
       }
       return h('div', { className: 'ud-rule' },
-        h('div', { className: 'ud-pricing-line' }, h('code', null, number),
-          h('button', { className: 'ud-btn', type: 'button', onClick: () => actions.batch(rule) }, t('pricing.batch'))),
+        h('div', { className: 'ud-pricing-line' }, h('code', { className: 'ud-slot-no' }, number),
+          h('button', { className: 'ud-btn ud-btn--text', type: 'button', onClick: () => actions.batch(rule) }, t('pricing.batch'))),
         h('div', { className: 'ud-slot-head' },
           h(PricingPriceGrid, {
             rule, currency, errors, pathPrefix, t,
@@ -5938,7 +5957,7 @@ ${HUD_CSS}
             h('button', {
               type: 'button', className: 'ud-btn ud-btn--text',
               onClick: () => patchConditions([...(rule.conditions ?? []), defaultCondition(CONDITION_KIND_OPTIONS[0])]),
-            }, `+${t('addCondition')}`))))
+            }, `+ ${t('addCondition')}`))))
     })
 
     // 模型组卡:组头 = 模型键输入(整组一次改名)+ 删除整组;组内 = 默认价槽(禁条件/排序/删除,恒兜底)
@@ -5983,9 +6002,9 @@ ${HUD_CSS}
                 onPricePatch: (part) => actions.patch(defaultSlot.id, part),
               })),
             h('div', { className: 'ud-pricing-line' },
-              h('code', null, `#${defaultSlot.index + 1}`),
+              h('code', { className: 'ud-slot-no' }, `#${defaultSlot.index + 1}`),
               h('span', { className: 'ud-rule-cond' }, t(isGlobalDefault ? 'pricing.globalFallback' : 'pricing.unconditional')),
-              h('button', { className: 'ud-btn', type: 'button', onClick: () => actions.batch(defaultSlot.rule) }, t('pricing.batch')))) : null,
+              h('button', { className: 'ud-btn ud-btn--text', type: 'button', onClick: () => actions.batch(defaultSlot.rule) }, t('pricing.batch')))) : null,
           extras.map((slot, position) => h(PricingExtraRuleCard, {
             key: slot.id, slotId: slot.id, rule: slot.rule, currency, errors, t, actions,
             pathPrefix: `${slot.id}.`,
@@ -6229,35 +6248,37 @@ ${HUD_CSS}
         type: 'button', className: 'ud-pricing-chip ud-pricing-chip--button',
         onClick: () => setDetail({ rule, kind }),
       }, t(`pricing.${kind}`, { n }))
-      return h('div', { className: 'ud-pricing-stack' },
+      return h('div', { className: 'ud-pricing-rules' },
         !rules.length ? h('div', { className: 'ud-pricing-line' }, h('span', { className: 'ud-pricing-note' }, t('pricingNotConfigured')),
           h('button', { className: 'ud-btn', type: 'button', onClick: onEdit }, t('pricing.configure'))) : null,
         labels.map((hasStar) => {
           const group = items.filter(({ rule }) => rule.model.includes(MODEL_WILDCARD) === hasStar)
           if (!group.length) return null
-          return h('section', { key: String(hasStar), className: 'ud-pricing-stack' },
-            h('h3', null, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
+          return h('section', { key: String(hasStar), className: 'ud-pricing-group' },
+            h('h3', null, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar'),
+              h('span', { className: 'ud-pricing-group-count' }, `·${group.length}`)),
             group.map(({ rule, index }) => {
               const stats = analysis.ruleStats.get(rule)
               const key = `${index}:${rule.model}`
-              return h('article', { key, className: 'ud-pricing-card' },
-                h('details', {
-                  onToggle: (event) => {
-                    const isOpen = event.currentTarget.open
-                    setExpanded((previous) => {
-                      const next = new Set(previous)
-                      if (isOpen) next.add(key)
-                      else next.delete(key)
-                      return next
-                    })
-                  },
+              return h('article', { key, className: 'ud-pricing-card ud-pricing-rule' },
+                h('button', {
+                  type: 'button', className: 'ud-pricing-rule-head', 'aria-expanded': expanded.has(key),
+                  onClick: () => setExpanded((previous) => {
+                    const next = new Set(previous)
+                    if (next.has(key)) next.delete(key)
+                    else next.add(key)
+                    return next
+                  }),
                 },
-                  h('summary', null, h('code', null, `#${index + 1} ${rule.model}`),
-                    isPricingFallback(rule) ? h('span', { className: 'ud-pricing-chip' }, t('pricing.globalFallback')) : null,
-                    stats.conflict ? h('span', { className: 'ud-pricing-chip ud-pricing-warn' }, t('pricing.conflict')) : null),
-                  expanded.has(key) ? h(PricingRuleDetails, { rule, stats, rules, t }) : null),
-                h('div', { className: 'ud-pricing-note' }, pricingConditionsText(rule, t)),
-                h('div', { className: 'ud-pricing-line' }, badge(rule, 'billing', stats.billing.length), badge(rule, 'taken', stats.taken.length)))
+                  h('span', { className: 'ud-pricing-rule-no' }, `#${index + 1}`),
+                  h('code', { className: 'ud-pricing-rule-model' }, rule.model),
+                  isPricingFallback(rule) ? h('span', { className: 'ud-pricing-chip' }, t('pricing.globalFallback')) : null,
+                  stats.conflict ? h('span', { className: 'ud-pricing-chip ud-pricing-warn' }, t('pricing.conflict')) : null,
+                  h('span', { className: 'ud-pricing-rule-caret', 'aria-hidden': 'true' })),
+                h('div', { className: 'ud-pricing-rule-foot' },
+                  h('span', { className: 'ud-pricing-note' }, pricingConditionsText(rule, t)),
+                  h('span', { className: 'ud-pricing-rule-tags' }, badge(rule, 'billing', stats.billing.length), badge(rule, 'taken', stats.taken.length))),
+                expanded.has(key) ? h(PricingRuleDetails, { rule, stats, rules, t }) : null)
             }))
         }),
         detail ? h(PricingRuleModels, { detail, analysis, rules, t, onClose: () => setDetail(null), onJump }) : null)
@@ -6573,9 +6594,9 @@ ${HUD_CSS}
         h('div', { className: 'ud-pref-row' },
           h('div', { className: 'ud-pref-text' },
             showTitle ? h('span', { className: 'ud-pref-title' }, t('pricing')) : null,
-            saved ? h('span', { className: 'ud-pref-desc' }, t('saved')) : null),
+            h('span', { className: 'ud-pref-desc' }, t('pricingUnit'))),
           h('div', { className: 'ud-pricing-actions' },
-            h('span', { className: 'ud-unit-note' }, t('pricingUnit')),
+            saved ? h('span', { className: 'ud-pref-desc' }, t('saved')) : null,
             h('div', { className: 'ud-group', role: 'group', 'aria-label': t('pricingCurrency') },
               CURRENCIES.map((symbol) => h('button', {
                 key: symbol, type: 'button',
@@ -6586,13 +6607,13 @@ ${HUD_CSS}
                   editRules((prev) => applyCurrencyToRules(prev, symbol))
                 },
               }, symbol))),
-            h('button', { className: 'ud-btn', type: 'button', disabled: saving, onClick: save }, t('save')))),
+            h('button', { className: 'ud-btn ud-pricing-primary', type: 'button', disabled: saving, onClick: save }, t('save')))),
         saveError || errors.size ? h('div', { className: 'ud-error', role: 'alert' }, saveError || t(errors.get('fallback') ?? 'pricing.validationSummary')) : null,
         h('div', { className: 'ud-pricing-line' },
           h(HintText, { className: 'ud-pricing-help', text: t('pricing.help'), tag: 'span' }, t('pricing.helpLabel')),
           currentRules.length > 0 && rules.some((rule) => !isPricingFallback(rule) || !syntheticGlobalRef.current)
             ? h(DeleteArmedButton, {
-              labelKey: 'pricing.disable', confirmKey: 'pricing.confirmDisable', showLabel: true, t,
+              labelKey: 'pricing.disable', confirmKey: 'pricing.confirmDisable', showLabel: true, tone: 'danger', t,
               onConfirm: () => {
                 const { draft, synthetic } = pricingDraftOf([], currency, allocateSlot)
                 syntheticGlobalRef.current = synthetic
@@ -6676,7 +6697,7 @@ ${HUD_CSS}
               className: 'ud-btn', type: 'button', onClick: () => { setPhase(null); setLoadAttempt((attempt) => attempt + 1) },
             }, t('pricing.retry')),
             failure === 'invalid' ? h(DeleteArmedButton, {
-              labelKey: 'pricing.reset', confirmKey: 'pricing.confirmReset', showLabel: true, t, onConfirm: resetPricing,
+              labelKey: 'pricing.reset', confirmKey: 'pricing.confirmReset', showLabel: true, tone: 'danger', t, onConfirm: resetPricing,
             }) : null) : null,
           saveError ? h('p', { className: 'ud-error', role: 'alert' }, saveError) : null) : views[name])))
     }

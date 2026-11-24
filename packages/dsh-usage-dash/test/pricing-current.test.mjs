@@ -199,9 +199,9 @@ test('Given 通配规则被精确规则接管 When 打开会计徽章 Then 先�
   const providerScope = { ...rule(2), model: 'q/*' }
   f.resolve(f.gets[0], { revision: 1, rules: [rule(1), pScope, providerScope, exact] }); await f.settle()
   const view = mountView(f, byComponent(editor, 'PricingRules'))
-  const cards = nodes(view.tree).filter(node => node.type === 'summary').map(text)
-  assert.deepEqual(cards.map(label => label.split(' ')[0]), ['#4', '#1', '#2', '#3'])
-  const global = nodes(view.tree).find(node => node.type === 'article' && text(node).includes('#1 */*'))
+  const heads = nodes(view.tree).filter(node => String(node.props?.className ?? '').includes('ud-pricing-rule-head'))
+  assert.deepEqual(heads.map(node => text(nodes(node).find(child => child.props?.className === 'ud-pricing-rule-no'))), ['#4', '#1', '#2', '#3'])
+  const global = nodes(view.tree).find(node => node.type === 'article' && text(node).includes('*/*'))
   const emptyBadge = byText({ tree: global }, '计费 0')
   assert.notEqual(emptyBadge.props.disabled, true)
   emptyBadge.props.onClick(); await f.settle()
