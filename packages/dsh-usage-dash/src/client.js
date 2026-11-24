@@ -883,6 +883,7 @@ const MESSAGES_ZH = {
   requestCurrentTag: '当前',
   settingsSection: '显示与增强',
   settingsSectionDesc: '官方弹窗补全与费用显示开关',
+  sectionDesc: '按模型与时点估算费用，定价规则与快照试算都在这里',
   displayGroup: '显示补全',
   displayGroupDesc: '官方用量与费用显示',
   recentGroup: '最近请求',
@@ -1215,6 +1216,7 @@ const MESSAGES_EN = {
   requestCurrentTag: 'Current',
   settingsSection: 'Display & enhancements',
   settingsSectionDesc: 'Official dialog additions and cost display',
+  sectionDesc: 'Estimates cost per model and point in time; pricing rules and snapshot probes live here',
   displayGroup: 'Display additions',
   displayGroupDesc: 'Official usage and cost display',
   recentGroup: 'Recent requests',
@@ -3968,10 +3970,13 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
     const STYLE_CSS = `
 /* 图表区分色:主色与热力图梯度挂业务蓝派生(brand-primary 在宿主新版主题为单色黑白,不可作数据色);
    speed/ttft 用 success/warn 语义槽,亮暗随宿主别名自动适配 */
-.ud-panel{display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:22px;color:var(--dsw-alias-label-primary);
+.ud-panel{display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:22px;color:var(--dsw-alias-label-primary);
 --ud-chart-1:var(--dsw-alias-state-business-primary);--ud-chart-2:var(--dsw-alias-state-success-primary);--ud-chart-3:var(--dsw-alias-state-warn-primary);--ud-chart-4:hsl(262 84% 65%);--ud-chart-5:hsl(329 85% 55%);--ud-chart-other:var(--dsw-alias-label-tertiary);
 --ud-heat-0:color-mix(in srgb, var(--dsw-alias-label-tertiary) 12%, transparent);--ud-heat-1:color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent);--ud-heat-2:color-mix(in srgb, var(--dsw-alias-state-business-primary) 36%, transparent);--ud-heat-3:color-mix(in srgb, var(--dsw-alias-state-business-primary) 54%, transparent);--ud-heat-4:color-mix(in srgb, var(--dsw-alias-state-business-primary) 74%, transparent);--ud-heat-5:var(--dsw-alias-state-business-primary);--ud-trend-line:var(--dsw-alias-state-business-primary);--ud-trend-speed:var(--dsw-alias-state-success-primary);--ud-trend-ttft:var(--dsw-alias-state-warn-primary);
 --ud-bg-overlay:var(--dsw-alias-bg-layer-2);--ud-border:var(--dsw-alias-border-l2);--ud-border-strong:var(--dsw-alias-border-l3);--ud-text:var(--dsw-alias-label-primary);--ud-text-sub:var(--dsw-alias-label-secondary);--ud-text-dim:var(--dsw-alias-label-tertiary);--ud-accent:var(--dsw-alias-state-business-primary);--ud-hover-bg:var(--dsw-alias-interactive-bg-hover);--ud-shadow-lv3:var(--dsw-shadow-lv3);--ud-radius-md:var(--dsw-radius-md);--ud-radius-sm:var(--dsw-radius-sm);--ud-card:var(--dsw-alias-bg-layer-1);--ud-card-border:var(--dsw-alias-border-l2)}
+.ud-section-page-head{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ud-section-page-title{margin:0;font-size:18px;line-height:26px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.ud-section-page-desc{margin:0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-tertiary)}
 .ud-toolbar{display:flex;align-items:flex-start;gap:12px}
 .ud-toolbar-main{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
 .ud-group{display:flex;align-items:center;gap:2px;padding:3px;border:0;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}
@@ -4123,8 +4128,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-switch input[type="checkbox"]:checked + .ud-switch__track .ud-switch__thumb{transform:translateX(${SWITCH_THUMB_TRAVEL}px)}
 .ud-switch input[type="checkbox"]:focus-visible + .ud-switch__track{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
 .ud-switch input[type="checkbox"]:disabled + .ud-switch__track{opacity:.45;cursor:default}
-.ud-settings-stack{display:flex;flex-direction:column;gap:8px}
-.ud-fold{border:1px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card);overflow:hidden}
+.ud-settings-stack{display:flex;flex-direction:column;gap:16px}
+.ud-fold{border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card);overflow:hidden}
 .ud-fold-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;box-sizing:border-box;padding:12px 16px;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;text-align:left;cursor:pointer}
 .ud-fold-head:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .ud-fold-head:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
@@ -4136,7 +4141,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-fold-caret{display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary);transition:transform .15s ease}
 .ud-fold-caret svg{display:block;width:14px;height:14px}
 .ud-fold--open .ud-fold-caret{transform:rotate(90deg)}
-.ud-fold-body{padding:8px 16px 16px;border-top:.5px solid var(--dsw-alias-border-l1)}
+.ud-fold-body{padding:12px 16px 16px;border-top:.5px solid var(--dsw-alias-border-l2)}
 .ud-fold-body[hidden]{display:none}
 .ud-pref-group{display:flex;flex-direction:column;gap:4px;border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-sm);padding:12px 16px}
 .ud-pref-group + .ud-pref-group{margin-top:8px}
@@ -4193,13 +4198,13 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-pattern .ud-field-error{grid-column:1/-1}
 .ud-pricing-stack{display:grid;gap:12px;min-width:0}
 .ud-pricing-toolrow{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:.5px solid var(--dsw-alias-border-l1)}
-.ud-pricing-rules{display:grid;gap:16px;min-width:0}
+.ud-pricing-rules{display:grid;gap:10px;min-width:0}
 .ud-pricing-group{display:grid;gap:0;min-width:0}
 .ud-pricing-group-head{display:flex;align-items:baseline;gap:6px;padding-bottom:6px}
-.ud-pricing-group-title{font-size:12px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary)}
+.ud-pricing-group-title{font-size:12px;line-height:18px;font-weight:500;color:var(--dsw-alias-label-secondary)}
 .ud-pricing-group-count{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
 .ud-pricing-rows{display:flex;flex-direction:column;min-width:0}
-.ud-pricing-rule{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:.5px solid var(--dsw-alias-border-l1);min-width:0;cursor:pointer}
+.ud-pricing-rule{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-bottom:.5px solid var(--dsw-alias-border-l2);min-width:0;cursor:pointer}
 .ud-pricing-rule:last-child{border-bottom:0}
 .ud-pricing-rule--open{padding:8px;margin:0 -8px;border-radius:var(--dsw-radius-sm);background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 55%,transparent)}
 .ud-pricing-empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 0;text-align:center}
@@ -4208,7 +4213,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-rule-head{display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;border-radius:var(--dsw-radius-sm)}
 .ud-pricing-rule-head:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .ud-pricing-rule-no{flex:none;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
-.ud-pricing-rule-model{flex:1;min-width:0;font-size:13px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ud-pricing-rule-model{flex:1;min-width:0;font-size:14px;line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ud-pricing-rule-caret{display:flex;align-items:center;justify-content:center;flex:none;color:var(--dsw-alias-label-tertiary);transition:transform .15s}
 .ud-pricing-rule-caret svg{display:block;width:14px;height:14px}
 .ud-pricing-rule-head[aria-expanded=true] .ud-pricing-rule-caret{transform:rotate(90deg)}
@@ -6145,8 +6150,8 @@ ${HUD_CSS}
         probe ? h('div', { className: 'ud-pricing-panel' },
           h('div', { className: 'ud-pricing-note' }, t('pricing.probe')),
           modelToggle(probe, probe.model, `${listId}-probe`), modelDetails(probe, `${listId}-probe`)) : null,
-        h('dl', { className: 'ud-pricing-summary' }, totals.map(([key, value]) => h('div', { className: 'ud-card', key },
-          h('dt', null, t(key)), h('dd', null, value)))),
+        rows.length ? h('dl', { className: 'ud-pricing-summary' }, totals.map(([key, value]) => h('div', { className: 'ud-card', key },
+          h('dt', null, t(key)), h('dd', null, value)))) : null,
         rows.length > priced.length ? h('p', { className: 'ud-pricing-warn' }, t('pricing.unpricedCount', { n: rows.length - priced.length })) : null,
         !rules.length ? h('div', { className: 'ud-pricing-empty' },
           h('p', { className: 'ud-pricing-empty-text' }, t('pricingNotConfigured')),
@@ -7164,6 +7169,9 @@ ${HUD_CSS}
       const emptyVisible = !error && (pointActive ? pointView && isEmptyRange(pointView) : stats && isEmptyRange(stats))
 
       return h('div', { className: 'ud-panel' },
+        h('header', { className: 'ud-section-page-head' },
+          h('h2', { className: 'ud-section-page-title' }, t('nav')),
+          h('p', { className: 'ud-section-page-desc' }, t('sectionDesc'))),
         h('div', { className: 'ud-toolbar' },
           h('div', { className: 'ud-toolbar-main' },
             h('div', { className: 'ud-group', role: 'group', 'aria-label': t('viewGroup') },
