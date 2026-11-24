@@ -588,7 +588,7 @@ test('非空定价表须有无条件全局兜底，空表仍可停用定价', as
   for (const rules of [[PRICING_RULE], [{ ...PRICING_RULE, model: '*/*' }]]) {
     const res = await post(rules)
     assert.equal(res.statusCode, 400)
-    assert.match(JSON.parse(res.body).error.message, /fallback/)
+    assert.match(JSON.parse(res.body).error.message, /^usage stats: an unconditional \*\/\* fallback is required$/)
   }
   assert.equal(pricing.calls.replace, 0)
   assert.deepEqual(pricing.rules(), [fallback])
@@ -620,6 +620,9 @@ test('pricing POST 非法规则拒绝 400 且不写入', async () => {
     { rules: [{ ...PRICING_RULE, price: { input: -1, output: 0, cacheRead: 0, cacheWrite: 0 } }] },
     { rules: [{ ...PRICING_RULE, conditions: [{ kind: 'unknown' }] }] },
     { rules: [{ ...PRICING_RULE, conditions: [{ kind: 'weekdays', days: [7] }] }] },
+    // conditions 缺失或 null 即拒:编辑器恒提交数组,写入空值会让匹配器语义不确定
+    { rules: [{ model: 'openai/default', currency: '¥', price: PRICING_RULE.price }] },
+    { rules: [{ ...PRICING_RULE, conditions: null }] },
     { rules: [{ ...PRICING_RULE, currency: '€' }] },
     // F15 表级单币:非空币种混用整表拒绝;null 与单币并存合法
     { rules: [{ ...PRICING_RULE, currency: '¥' }, { ...PRICING_RULE, model: 'openai/gpt-x', currency: '$' }] },
@@ -632,6 +635,16 @@ test('pricing POST 非法规则拒绝 400 且不写入', async () => {
     assert.equal(parsed.error.message, 'usage stats: invalid pricing rules')
   }
   assert.equal(pricing.calls.replace, 0)
+})
+
+test('pricing POST 接受 currency 为 null 的非空表并原样回读', async () => {
+  const pricing = makePricing()
+  const { routes } = mount({ pricing })
+  const rules = [{ ...PRICING_RULE, currency: null }, { ...FALLBACK_RULE, currency: null }]
+  const res = await invokeJson(routes, PATH_PRICING, { payload: { rules } })
+  assert.equal(res.statusCode, 200)
+  const read = await invoke(routes, PATH_PRICING, { method: 'GET' })
+  assert.deepEqual(JSON.parse(read.body).value.rules.map((rule) => rule.currency), [null, null])
 })
 
 test('pricing POST 跨 Origin 拒绝 403', async () => {

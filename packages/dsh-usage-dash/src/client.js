@@ -942,6 +942,8 @@ const MESSAGES_ZH = {
   pricing: '定价规则',
   pricingUnavailable: '定价规则不可用',
   'pricing.retry': '重新加载定价',
+  'pricing.reset': '清空定价',
+  'pricing.confirmReset': '确认永久清空定价',
   'pricing.views': '定价视图',
   'pricing.models': '模型',
   'pricing.rules': '规则',
@@ -961,6 +963,8 @@ const MESSAGES_ZH = {
   'pricing.fallback': '靠兜底计价',
   'pricing.noObserved': '当前统计范围内暂无已观察到的模型。',
   'pricing.noSearchResults': '暂无匹配的已观察模型。',
+  'pricing.previousModels': '上一页型号',
+  'pricing.nextModels': '下一页型号',
   'pricing.configure': '配置定价',
   'pricing.modelCount': '{n} 个型号',
   'pricing.probe': '未观察到的型号 · 试算',
@@ -1270,6 +1274,8 @@ const MESSAGES_EN = {
   pricing: 'Pricing rules',
   pricingUnavailable: 'Pricing rules unavailable',
   'pricing.retry': 'Reload pricing',
+  'pricing.reset': 'Clear pricing',
+  'pricing.confirmReset': 'Confirm permanent clearing',
   'pricing.views': 'Pricing views',
   'pricing.models': 'Models',
   'pricing.rules': 'Rules',
@@ -1289,6 +1295,8 @@ const MESSAGES_EN = {
   'pricing.fallback': 'Using fallback',
   'pricing.noObserved': 'No models were observed in this usage range.',
   'pricing.noSearchResults': 'No observed models match the search.',
+  'pricing.previousModels': 'Previous models',
+  'pricing.nextModels': 'Next models',
   'pricing.configure': 'Configure pricing',
   'pricing.modelCount': '{n} models',
   'pricing.probe': 'Unobserved model · price check',
@@ -2790,12 +2798,14 @@ const COST_APPROX = '≈'
 const UNIT_PRICE_DECIMALS = 6
 const THOUSANDS_PATTERN = /(\d)(?=(\d{3})+(?!\d))/g
 
-// 千分位 + 至少 decimals 位小数,正值小于 10^-decimals 时小数位 +2;货币空串不加符号,「≈」前缀由调用方拼
+// 千分位 + 至少 decimals 位小数,正值小于 10^-decimals 时小数位 +2;
+// 货币非字符串(存量规则可能缺省或为 null)按无符号处理,「≈」前缀由调用方拼
 function formatCost(value, currency, decimals = COST_DECIMALS) {
+  const symbol = typeof currency === 'string' ? currency : ''
   const microThreshold = 10 ** -decimals
   const used = value > 0 && value < microThreshold ? decimals + (COST_MICRO_DECIMALS - COST_DECIMALS) : decimals
   const [whole, fraction] = value.toFixed(used).split('.')
-  return `${currency}${whole.replace(THOUSANDS_PATTERN, '$1,')}.${fraction}`
+  return `${symbol}${whole.replace(THOUSANDS_PATTERN, '$1,')}.${fraction}`
 }
 
 const COST_CENT_SCALE = 100
@@ -3669,9 +3679,17 @@ function groupRulesOf(rules) {
   return [...groups.values()]
 }
 
-// 组内划分:首条无条件规则即该模型的实际默认价(与 matchPrice 同档取首条一致),
-// UI 禁条件/排序/删除;其余为附加计费规则。归一会把默认价移到组末,渲染层仍按此口径取槽,
-// 避免存量数据里「显示末条、实际首条」再次分叉。
+// 组卡 memo 判等:依赖「草稿规则对象不可变」——改名/改价/换币都新建对象,插入移动只重排引用。
+// 因此逐槽比 rule 引用即可覆盖字段变化;errors/t/actions/currency 按引用比较。
+function pricingGroupPropsEqual(a, b) {
+  if (a.currency !== b.currency || a.errors !== b.errors || a.t !== b.t || a.actions !== b.actions) return false
+  if (a.group.slots.length !== b.group.slots.length) return false
+  return a.group.slots.every((slot, index) => slot.rule === b.group.slots[index].rule && slot.index === b.group.slots[index].index)
+}
+
+// 组内划分:首条无条件规则即该模型的实际默认价(与匹配器同档取表内首条一致),
+// UI 禁条件/排序/删除;其余为附加计费规则。归一只删除同模式后续无条件副本、不重排,
+// 因此渲染层按「组内首条无条件」取槽,与计费胜者同口径。
 function partitionGroupOf(group) {
   const fallbackIndex = group.slots.findIndex((slot) => (slot.rule.conditions ?? []).length === 0)
   if (fallbackIndex < 0) return { defaultSlot: null, extras: group.slots }
@@ -3753,6 +3771,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
     const PRICING_SAVED_NOTICE_MS = 3 * 1000
     let cached = null
     let pricingFlight = null
+    // 最近一次取价失败原因:transport(请求失败或存储降级 503)与 invalid(回包结构非法)后果不同,
+    // 只有后者才值得提供清空自救,前者重载即可,不能让瞬时失败诱导删表
+    let pricingFailure = null
     const pricingListeners = new Set()
     // 只校验渲染所需的结构。旧规则允许进入编辑页修正其模式、时刻或日期。
     const validStoredCondition = (condition) => {
@@ -3768,6 +3789,8 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
         && (rule.conditions ?? []).every(validStoredCondition))
     const applyPricingValue = (value, mutation = false) => {
       if (!validPricing(value) || (cached && value.revision < cached.revision)) return cached
+      // 成功写入即恢复健康,后续不可用态不会误沿用旧的失败原因
+      pricingFailure = null
       const refresh = mutation || (cached !== null && value.revision !== cached.revision)
       cached = { revision: value.revision, rules: value.rules, fetchedAt: Date.now() }
       for (const listener of pricingListeners) listener(cached, refresh)
@@ -3790,13 +3813,22 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
       return parseEnvelope(json)
     }
 
-    // value 缺形状按失败处理:回退旧值,无旧值为 null(费用显示占位)
+    // value 缺形状按失败处理:回退旧值,无旧值为 null(费用显示占位);失败原因留给编辑器区分处理
     const fetchPricing = async (force = false) => {
       if (!force && cached && Date.now() - cached.fetchedAt < PRICING_CACHE_TTL_MS) return cached
       if (!pricingFlight) {
         pricingFlight = (async () => {
           const result = await requestGet(ENDPOINTS.pricing)
-          return validPricing(result.ok ? result.value : null) ? applyPricingValue(result.value) : cached
+          if (!result.ok) {
+            pricingFailure = 'transport'
+            return cached
+          }
+          if (!validPricing(result.value)) {
+            pricingFailure = 'invalid'
+            return cached
+          }
+          pricingFailure = null
+          return applyPricingValue(result.value)
         })().finally(() => { pricingFlight = null })
       }
       return pricingFlight
@@ -5812,7 +5844,8 @@ ${HUD_CSS}
 
     // 附加计费规则卡:头行 = 价格四桶 + 上移/下移/删除;下方为条件组合区(组内从上到下首个命中者生效)。
     // 默认价在组内独立成槽,附加规则不再承担兜底语义
-    function PricingExtraRuleCard({ rule, currency, errors, pathPrefix, t, onPatch, onRemove, onMove, canMoveUp, canMoveDown, onBatch, number }) {
+    const PricingExtraRuleCard = React.memo(function PricingExtraRuleCard({ rule, currency, errors, pathPrefix, t, actions, slotId, above, below, number }) {
+      const onPatch = (patch) => actions.patch(slotId, patch)
       const errorTextOf = (path) => {
         const key = errors.get(path)
         return key ? h('span', { className: 'ud-field-error' }, t(key)) : null
@@ -5884,21 +5917,21 @@ ${HUD_CSS}
       }
       return h('div', { className: 'ud-rule' },
         h('div', { className: 'ud-pricing-line' }, h('code', null, number),
-          h('button', { className: 'ud-btn', type: 'button', onClick: onBatch }, t('pricing.batch'))),
+          h('button', { className: 'ud-btn', type: 'button', onClick: () => actions.batch(rule) }, t('pricing.batch'))),
         h('div', { className: 'ud-slot-head' },
           h(PricingPriceGrid, {
             rule, currency, errors, pathPrefix, t,
             onPricePatch: (part) => onPatch(part),
           }),
-          canMoveUp ? h('button', {
-            className: 'ud-btn ud-btn--text', type: 'button', onClick: () => onMove(-1),
+          above ? h('button', {
+            className: 'ud-btn ud-btn--text', type: 'button', onClick: () => actions.move(slotId, above),
             'aria-label': t('moveUp'), title: t('moveUp'),
           }, '↑') : null,
-          canMoveDown ? h('button', {
-            className: 'ud-btn ud-btn--text', type: 'button', onClick: () => onMove(1),
+          below ? h('button', {
+            className: 'ud-btn ud-btn--text', type: 'button', onClick: () => actions.move(slotId, below),
             'aria-label': t('moveDown'), title: t('moveDown'),
           }, '↓') : null,
-          h(DeleteArmedButton, { labelKey: 'deleteRule', confirmKey: 'confirmDelete', onConfirm: onRemove, t })),
+          h(DeleteArmedButton, { labelKey: 'deleteRule', confirmKey: 'confirmDelete', onConfirm: () => actions.remove(slotId), t })),
         h('div', { className: 'ud-rule-conds' },
           (rule.conditions ?? []).map((condition, conditionIndex) => conditionRow(condition, conditionIndex)),
           h('div', { className: 'ud-cond-add' },
@@ -5906,16 +5939,17 @@ ${HUD_CSS}
               type: 'button', className: 'ud-btn ud-btn--text',
               onClick: () => patchConditions([...(rule.conditions ?? []), defaultCondition(CONDITION_KIND_OPTIONS[0])]),
             }, `+${t('addCondition')}`))))
-    }
+    })
 
     // 模型组卡:组头 = 模型键输入(整组一次改名)+ 删除整组;组内 = 默认价槽(禁条件/排序/删除,恒兜底)
     // + 附加计费规则列表(从上到下首个命中生效,全不命中落默认价)。全局 */* 组模型键锁定且不可删除。
-    // 组件 key 由调用方锚定首槽位平面索引,改名引发的重新聚合不会丢焦点
-    function PricingModelGroup({ group, currency, errors, t, onModelChange, onGroupRemove, onSlotPatch, onSlotRemove, onSlotMove, onSlotAdd, onBatch }) {
-      const modelError = group.slots.map((slot) => errors.get(`${slot.index}.model`)).find(Boolean)
+    // 组件 key 锚定草稿组稳定 id(groups 见 pricingDraftGroups),改名重聚合不重建组件、输入焦点不丢
+    const PricingModelGroup = React.memo(function PricingModelGroup({ group, currency, errors, t, actions }) {
+      const modelError = group.slots.map((slot) => errors.get(`${slot.id}.model`)).find(Boolean)
+      const onModelChange = (model, invalidProvider) => actions.rename(group.id, model, invalidProvider)
       const { defaultSlot, extras } = partitionGroupOf(group)
       const isGlobalDefault = group.id === PRICING_FALLBACK_GROUP
-      // 新附加规则插到默认价平面位之前(无默认价则组末),保证默认价恒居组末
+      // 新附加规则插到默认价平面位之前(无默认价则组末);归一本身不重排,插入位置只影响新增项
       const insertPosition = defaultSlot ? defaultSlot.index - 1 : group.slots[group.slots.length - 1].index
       const slash = group.model.indexOf(SEGMENT_SEPARATOR)
       const provider = slash < 0 ? '' : group.model.slice(0, slash)
@@ -5934,44 +5968,35 @@ ${HUD_CSS}
               if (value.includes(SEGMENT_SEPARATOR)) onModelChange(group.model, value)
               else onModelChange(`${value}/${model}`)
             }, invalidProvider !== undefined || Boolean(modelError)),
-            patternField('pricing.modelPattern', model, (value) => onModelChange(`${provider}/${value}`, invalidProvider)),
+            patternField('pricing.modelPattern', model, (value) => onModelChange(`${provider}/${value}`)),
             invalidProvider !== undefined || modelError ? h('span', { className: 'ud-field-error' },
               t(invalidProvider !== undefined ? 'pricing.providerSlash' : modelError)) : null),
           isGlobalDefault ? null : h(DeleteArmedButton, {
-            labelKey: 'deleteGroup', confirmKey: 'confirmDelete', onConfirm: onGroupRemove, t,
+            labelKey: 'deleteGroup', confirmKey: 'confirmDelete', onConfirm: () => actions.removeGroup(group.id), t,
           })),
         h('div', { className: 'ud-rule-group-slots' },
           defaultSlot ? h('div', { className: 'ud-rule ud-rule-default' },
             h('div', { className: 'ud-slot-head' },
               h(PricingPriceGrid, {
                 rule: defaultSlot.rule, currency, errors,
-                pathPrefix: `${defaultSlot.index}.`, t,
-                onPricePatch: (part) => onSlotPatch(defaultSlot.index, part),
+                pathPrefix: `${defaultSlot.id}.`, t,
+                onPricePatch: (part) => actions.patch(defaultSlot.id, part),
               })),
             h('div', { className: 'ud-pricing-line' },
               h('code', null, `#${defaultSlot.index + 1}`),
               h('span', { className: 'ud-rule-cond' }, t(isGlobalDefault ? 'pricing.globalFallback' : 'pricing.unconditional')),
-              h('button', { className: 'ud-btn', type: 'button', onClick: () => onBatch(defaultSlot.rule) }, t('pricing.batch')))) : null,
+              h('button', { className: 'ud-btn', type: 'button', onClick: () => actions.batch(defaultSlot.rule) }, t('pricing.batch')))) : null,
           extras.map((slot, position) => h(PricingExtraRuleCard, {
-            key: slot.index,
-            rule: slot.rule,
-            currency,
-            errors,
-            pathPrefix: `${slot.index}.`,
-            t,
-            onPatch: (part) => onSlotPatch(slot.index, part),
-            onRemove: () => onSlotRemove(slot.index),
-            onMove: (delta) => onSlotMove(slot.index, extras[position + delta].index),
-            canMoveUp: position > 0,
-            canMoveDown: position < extras.length - 1,
+            key: slot.id, slotId: slot.id, rule: slot.rule, currency, errors, t, actions,
+            pathPrefix: `${slot.id}.`,
+            above: extras[position - 1]?.id, below: extras[position + 1]?.id,
             number: `#${slot.index + 1}`,
-            onBatch: () => onBatch(slot.rule),
           }))),
         h('button', {
           className: 'ud-rule-add', type: 'button',
-          onClick: () => onSlotAdd(insertPosition, group.model, !defaultSlot),
+          onClick: () => actions.addSlot(insertPosition, group, !defaultSlot),
         }, defaultSlot ? t('addRule') : t('addDefaultPrice')))
-    }
+    }, pricingGroupPropsEqual)
 
     const PRICING_TABS = ['models', 'rules', 'edit']
     const EMPTY_PRICING_ROWS = []
@@ -6030,20 +6055,30 @@ ${HUD_CSS}
         h('ul', { id: detailsId, hidden: !othersOpen }, othersOpen ? others.map(entry) : null))
     }
 
+    const PRICING_SEARCH_AUTO_GROUPS = 3
+    const PRICING_MODELS_PER_PAGE = 20
+    const PRICING_SEARCH_SUGGESTIONS = 40
+
     function PricingModels({ analysis, rules, moment, query, onQuery, selectedModel, onSelect, onEdit, t }) {
       const listId = React.useId()
       const [providerOverrides, setProviderOverrides] = useState(() => new Map())
-      const rows = [...analysis.rows.values()]
-      const groups = new Map()
+      const [providerPages, setProviderPages] = useState(() => new Map())
+      const rows = useMemo(() => [...analysis.rows.values()], [analysis])
       const probeKey = query.trim()
       const search = probeKey.toLowerCase()
       const exactObserved = analysis.rows.has(probeKey)
-      for (const row of rows) {
-        const provider = providerOf(row.model)
-        if (exactObserved ? row.model !== probeKey : search && !row.model.toLowerCase().includes(search) && !provider.toLowerCase().includes(search)) continue
-        if (!groups.has(provider)) groups.set(provider, [])
-        groups.get(provider).push(row)
-      }
+      const { groups, suggestions } = useMemo(() => {
+        const groups = new Map()
+        const suggestions = []
+        for (const row of rows) {
+          const provider = providerOf(row.model)
+          if (exactObserved ? row.model !== probeKey : search && !row.model.toLowerCase().includes(search) && !provider.toLowerCase().includes(search)) continue
+          if (!groups.has(provider)) groups.set(provider, [])
+          groups.get(provider).push(row)
+          if (suggestions.length < PRICING_SEARCH_SUGGESTIONS) suggestions.push(h('option', { key: row.model, value: row.model }))
+        }
+        return { groups: [...groups].sort(([a], [b]) => a.localeCompare(b, 'en')), suggestions }
+      }, [rows, exactObserved, probeKey, search])
       const probe = isTwoSegmentModel(probeKey) && !probeKey.includes(MODEL_WILDCARD) && !exactObserved
         ? { model: probeKey, ...resolvePricingRule(rules, probeKey, moment) } : null
       const priced = rows.filter((row) => row.winner)
@@ -6070,11 +6105,15 @@ ${HUD_CSS}
             type: 'search', className: 'ud-input', value: query, list: listId, placeholder: t('pricing.searchPlaceholder'),
             onChange: (event) => {
               const value = event.target.value
+              if (value.trim() !== probeKey) {
+                setProviderOverrides(new Map())
+                setProviderPages(new Map())
+              }
               onQuery(value)
               onSelect(analysis.rows.has(value.trim()) ? value.trim() : null)
             },
           })),
-        h('datalist', { id: listId }, rows.map((row) => h('option', { key: row.model, value: row.model }))),
+        h('datalist', { id: listId }, suggestions),
         probe ? h('div', { className: 'ud-pricing-card' },
           h('div', { className: 'ud-pricing-note' }, t('pricing.probe')),
           modelToggle(probe, probe.model, `${listId}-probe`), modelDetails(probe, `${listId}-probe`)) : null,
@@ -6083,21 +6122,28 @@ ${HUD_CSS}
         rows.length > priced.length ? h('p', { className: 'ud-pricing-warn' }, t('pricing.unpricedCount', { n: rows.length - priced.length })) : null,
         !rules.length ? h('div', { className: 'ud-pricing-line' }, h('span', { className: 'ud-pricing-note' }, t('pricingNotConfigured')),
           h('button', { className: 'ud-btn', type: 'button', onClick: onEdit }, t('pricing.configure'))) : null,
-        groups.size === 0 ? h('p', { className: 'ud-empty' }, t(rows.length ? 'pricing.noSearchResults' : 'pricing.noObserved')) : null,
-        [...groups].sort(([a], [b]) => a.localeCompare(b, 'en')).map(([provider, items], index) => {
-          const key = `${search}:${provider}`
-          const open = providerOverrides.get(key) ?? (Boolean(search) || index === 0)
+        groups.length === 0 ? h('p', { className: 'ud-empty' }, t(rows.length ? 'pricing.noSearchResults' : 'pricing.noObserved')) : null,
+        groups.map(([provider, items], index) => {
+          const open = exactObserved || (providerOverrides.get(provider) ?? index < (search ? PRICING_SEARCH_AUTO_GROUPS : 1))
           const detailsId = `${listId}-provider-${encodeURIComponent(provider)}`
+          const lastPage = Math.ceil(items.length / PRICING_MODELS_PER_PAGE) - 1
+          const page = Math.min(providerPages.get(provider) ?? 0, lastPage)
+          const start = page * PRICING_MODELS_PER_PAGE
+          const paginate = (next) => setProviderPages((previous) => new Map(previous).set(provider, next))
           return h('div', { key: provider, className: 'ud-pricing-card' },
             h('button', {
               className: 'ud-pricing-row', type: 'button', 'aria-expanded': open, 'aria-controls': detailsId,
-              onClick: () => setProviderOverrides((previous) => new Map(previous).set(key, !open)),
+              onClick: () => setProviderOverrides((previous) => new Map(previous).set(provider, !open)),
             }, h('code', null, provider), h('span', { className: 'ud-pricing-note' }, t('pricing.modelCount', { n: items.length })),
             h('span', { 'aria-hidden': true }, open ? '▾' : '▸')),
-            h('div', { id: detailsId, hidden: !open }, open ? items.map((row) => {
+            h('div', { id: detailsId, hidden: !open }, open ? items.slice(start, start + PRICING_MODELS_PER_PAGE).map((row) => {
               const id = `${listId}-${encodeURIComponent(row.model)}`
               return h('div', { key: row.model, className: 'ud-pricing-model' }, modelToggle(row, modelNameOf(row.model), id), modelDetails(row, id))
-            }) : null))
+            }) : null,
+            open && lastPage > 0 ? h('div', { className: 'ud-pricing-line' },
+              h('button', { type: 'button', className: 'ud-btn', disabled: page === 0, onClick: () => paginate(page - 1) }, t('pricing.previousModels')),
+              h('span', { className: 'ud-pricing-note' }, `${page + 1}/${lastPage + 1}`),
+              h('button', { type: 'button', className: 'ud-btn', disabled: page === lastPage, onClick: () => paginate(page + 1) }, t('pricing.nextModels'))) : null))
         }))
     }
 
@@ -6280,12 +6326,13 @@ ${HUD_CSS}
     }
 
     const DRAFT_GROUP = Symbol('pricing draft group')
+    const DRAFT_SLOT = Symbol('pricing draft slot')
     const PRICING_FALLBACK_GROUP = `loaded:${MODEL_UNROUTED}`
 
-    function pricingDraftOf(rules, currency) {
+    function pricingDraftOf(rules, currency, allocateSlot) {
       const { rules: draft, synthetic } = ensureGlobalDefault(normalizePricingRules(copyRules(rules)), currency)
       if (synthetic) draft.at(-1).price = Object.fromEntries(PRICE_KEYS.map((key) => [key, '']))
-      return { draft: draft.map((rule) => ({ ...rule, [DRAFT_GROUP]: `loaded:${rule.model}` })), synthetic }
+      return { draft: draft.map((rule) => ({ ...rule, [DRAFT_GROUP]: `loaded:${rule.model}`, [DRAFT_SLOT]: allocateSlot() })), synthetic }
     }
 
     function pricingDraftGroups(rules) {
@@ -6293,7 +6340,7 @@ ${HUD_CSS}
       rules.forEach((rule, index) => {
         const id = rule[DRAFT_GROUP]
         if (!groups.has(id)) groups.set(id, { id, model: rule.model, slots: [] })
-        groups.get(id).slots.push({ rule, index })
+        groups.get(id).slots.push({ rule, index, id: rule[DRAFT_SLOT] })
       })
       return [...groups.values()].sort((a, b) => Number(a.id === PRICING_FALLBACK_GROUP) - Number(b.id === PRICING_FALLBACK_GROUP))
     }
@@ -6316,6 +6363,7 @@ ${HUD_CSS}
       const [selectedModel, setSelectedModel] = useState(null)
       const [query, setQuery] = useState('')
       const [phase, setPhase] = useState(null)
+      const [failure, setFailure] = useState(null)
       const [loadAttempt, setLoadAttempt] = useState(0)
       const boardId = React.useId()
       const boardRef = useRef(null)
@@ -6370,11 +6418,39 @@ ${HUD_CSS}
       const [saved, setSaved] = useState(false)
       const savedTimerRef = useRef(null)
       const draftVersionRef = useRef(0)
-      const nextGroupRef = useRef(0)
-      const editRules = (updater) => {
+      const nextSlotRef = useRef(0)
+      const allocateSlot = useCallback(() => `slot:${nextSlotRef.current++}`, [])
+      const editRules = useCallback((updater, structural = false) => {
         draftVersionRef.current += 1
         setRules(updater)
-      }
+        if (structural) setErrors((previous) => previous.size ? new Map() : previous)
+      }, [])
+      const draftGroups = useMemo(() => rules ? pricingDraftGroups(rules) : [], [rules])
+      const actions = useMemo(() => ({
+        batch: setBatchSource,
+        rename: (id, model, invalidProvider) => {
+          editRules((previous) => previous.map((rule) => {
+            if (rule[DRAFT_GROUP] !== id) return rule
+            const next = { ...rule, model }
+            if (invalidProvider === undefined) delete next.invalidProvider
+            else next.invalidProvider = invalidProvider
+            return next
+          }), true)
+        },
+        patch: (id, patch) => editRules((previous) => previous.map((rule) => rule[DRAFT_SLOT] === id ? { ...rule, ...patch } : rule), 'conditions' in patch),
+        remove: (id) => editRules((previous) => previous.filter((rule) => rule[DRAFT_SLOT] !== id), true),
+        removeGroup: (id) => editRules((previous) => previous.filter((rule) => rule[DRAFT_GROUP] !== id), true),
+        move: (from, to) => editRules((previous) => moveRuleTo(previous,
+          previous.findIndex((rule) => rule[DRAFT_SLOT] === from), previous.findIndex((rule) => rule[DRAFT_SLOT] === to)), true),
+        addSlot: (position, group, asDefault) => {
+          const slot = {
+            ...defaultPricingRule(currency, group.model), [DRAFT_GROUP]: group.id, [DRAFT_SLOT]: allocateSlot(),
+            ...(group.slots[0].rule.invalidProvider !== undefined ? { invalidProvider: group.slots[0].rule.invalidProvider } : {}),
+            conditions: asDefault ? [] : [defaultCondition(CONDITION_KIND_OPTIONS[0])],
+          }
+          editRules((previous) => insertRuleAt(previous, position, slot), true)
+        },
+      }), [allocateSlot, currency, editRules])
       const aliveRef = useRef(false)
       const syntheticGlobalRef = useRef(false)
       useEffect(() => {
@@ -6387,11 +6463,14 @@ ${HUD_CSS}
         fetchPricing(loadAttempt > 0).then((value) => {
           if (!alive) return
           if (!value) {
+            setFailure(pricingFailure ?? 'transport')
             setPhase(PRICING_STATE_UNAVAILABLE)
             return
           }
+          setFailure(null)
+          setSaveError('')
           const unified = aggregateCurrencyOf(value.rules) || CURRENCIES[0]
-          const { draft, synthetic } = pricingDraftOf(value.rules, unified)
+          const { draft, synthetic } = pricingDraftOf(value.rules, unified, allocateSlot)
           syntheticGlobalRef.current = synthetic
           setLoadedRules(value.rules)
           setCurrency(unified)
@@ -6408,17 +6487,17 @@ ${HUD_CSS}
       const save = async () => {
         const isEmptySynthetic = (rule) => syntheticGlobalRef.current && rule[DRAFT_GROUP] === PRICING_FALLBACK_GROUP
           && isPricingFallback(rule) && PRICE_KEYS.every((key) => rule.price[key] === '')
-        const retained = rules.flatMap((rule, index) => isEmptySynthetic(rule) ? [] : [{ rule, index }])
-        const draft = retained.map(({ rule }) => rule)
+        const draft = rules.filter((rule) => !isEmptySynthetic(rule))
         const found = new Map([...validatePricingRules(draft)].map(([path, error]) => {
           const [index, ...suffix] = path.split('.')
-          return [[retained[Number(index)].index, ...suffix].join('.'), error]
+          return [[draft[Number(index)][DRAFT_SLOT], ...suffix].join('.'), error]
         }))
         const defaults = new Set()
-        for (const { rule, index } of retained) {
-          if (rule.invalidProvider !== undefined) found.set(`${index}.model`, 'pricing.providerSlash')
+        for (const rule of draft) {
+          const slot = rule[DRAFT_SLOT]
+          if (rule.invalidProvider !== undefined) found.set(`${slot}.model`, 'pricing.providerSlash')
           if (rule.conditions?.length) continue
-          if (defaults.has(rule.model)) found.set(`${index}.model`, 'pricing.duplicateDefault')
+          if (defaults.has(rule.model)) found.set(`${slot}.model`, 'pricing.duplicateDefault')
           defaults.add(rule.model)
         }
         if (draft.length && !draft.some(isPricingFallback)) {
@@ -6454,7 +6533,7 @@ ${HUD_CSS}
         }
         // 空表仍保留可见的未配置全局槽。
         const unified = aggregateCurrencyOf(result.value.rules) || currency
-        const { draft: nextDraft, synthetic } = pricingDraftOf(result.value.rules, unified)
+        const { draft: nextDraft, synthetic } = pricingDraftOf(result.value.rules, unified, allocateSlot)
         syntheticGlobalRef.current = synthetic
         setLoadedRules(result.value.rules)
         setErrors(new Map())
@@ -6515,7 +6594,7 @@ ${HUD_CSS}
             ? h(DeleteArmedButton, {
               labelKey: 'pricing.disable', confirmKey: 'pricing.confirmDisable', showLabel: true, t,
               onConfirm: () => {
-                const { draft, synthetic } = pricingDraftOf([], currency)
+                const { draft, synthetic } = pricingDraftOf([], currency, allocateSlot)
                 syntheticGlobalRef.current = synthetic
                 setErrors(new Map())
                 setSaveError('')
@@ -6526,44 +6605,23 @@ ${HUD_CSS}
         batchSource ? h(PricingBatch, {
           source: batchSource, rules, observed, moment, t, onClose: () => setBatchSource(null),
           onConfirm: (additions) => {
-            const newRules = additions.map((candidate) => ({ ...candidate, [DRAFT_GROUP]: `new:${nextGroupRef.current++}` }))
-            editRules((prev) => [...prev, ...newRules.filter((candidate) => !prev.some((rule) => rule.model === candidate.model))])
+            const newRules = additions.map((candidate) => {
+              const id = allocateSlot()
+              return { ...candidate, [DRAFT_GROUP]: id, [DRAFT_SLOT]: id }
+            })
+            editRules((prev) => {
+              const existing = new Set(prev.map((rule) => rule.model))
+              return [...prev, ...newRules.filter((candidate) => !existing.has(candidate.model))]
+            }, true)
             setBatchSource(null)
           },
         }) : null,
-        pricingDraftGroups(rules).map((group) => h(PricingModelGroup, {
-          key: group.id,
-          group,
-          currency,
-          errors,
-          t,
-          onBatch: setBatchSource,
-          onModelChange: (model, invalidProvider) => editRules((prev) => {
-            const indices = new Set(group.slots.map((slot) => slot.index))
-            return prev.map((rule, index) => {
-              if (!indices.has(index)) return rule
-              const next = { ...rule, model }
-              if (invalidProvider === undefined) delete next.invalidProvider
-              else next.invalidProvider = invalidProvider
-              return next
-            })
-          }),
-          onGroupRemove: () => editRules((prev) => removeRulesAt(prev, group.slots.map((slot) => slot.index))),
-          onSlotPatch: (index, part) => editRules((prev) => patchItemAt(prev, index, part)),
-          onSlotRemove: (index) => editRules((prev) => prev.filter((_, i) => i !== index)),
-          onSlotMove: (fromIndex, toIndex) => editRules((prev) => moveRuleTo(prev, fromIndex, toIndex)),
-          onSlotAdd: (position, model, asDefault) => editRules((prev) => insertRuleAt(prev, position, {
-            ...defaultPricingRule(currency, model), [DRAFT_GROUP]: group.id,
-            ...(group.slots[0].rule.invalidProvider !== undefined ? { invalidProvider: group.slots[0].rule.invalidProvider } : {}),
-            // 默认价槽无条件;附加规则至少带一条条件,防止删光后变成隐藏默认价
-            conditions: asDefault ? [] : [defaultCondition(CONDITION_KIND_OPTIONS[0])],
-          })),
-        })),
+        draftGroups.map((group) => h(PricingModelGroup, { key: group.id, group, currency, errors, t, actions })),
         h('button', {
           className: 'ud-rule-add', type: 'button',
           onClick: () => {
-            const id = `new:${nextGroupRef.current++}`
-            editRules((prev) => [...prev, { ...defaultPricingRule(currency), [DRAFT_GROUP]: id }])
+            const id = allocateSlot()
+            editRules((prev) => [...prev, { ...defaultPricingRule(currency), [DRAFT_GROUP]: id, [DRAFT_SLOT]: id }], true)
           },
         }, t('addGroup'))) : null
       const views = {
@@ -6582,14 +6640,45 @@ ${HUD_CSS}
           },
         }) : null,
       }
+      // 存量规则无法渲染时,重试只会重复失败:另给清空出口,走空表(等价未配置)自救。
+      // 请求失败态不给该出口——那时原表可能完好,误清即不可恢复
+      const resetPricing = async () => {
+        setPhase(null)
+        setSaveError('')
+        const result = await requestPost(ENDPOINTS.pricing, { rules: [] })
+        if (!aliveRef.current) return
+        if (!result.ok || !validPricing(result.value)) {
+          setSaveError(result.message || t('pricing.invalidResponse'))
+          setFailure('transport')
+          setPhase(PRICING_STATE_UNAVAILABLE)
+          return
+        }
+        // 直接用写回的空表进入可用态,不再二次取价
+        const unified = aggregateCurrencyOf(result.value.rules) || CURRENCIES[0]
+        const { draft, synthetic } = pricingDraftOf(result.value.rules, unified, allocateSlot)
+        syntheticGlobalRef.current = synthetic
+        setFailure(null)
+        setLoadedRules(result.value.rules)
+        setCurrency(unified)
+        setRules(applyCurrencyToRules(draft, unified))
+        setErrors(new Map())
+        setPhase(PRICING_STATE_READY)
+        applyPricingValue(result.value, true)
+        hudRefresh({ force: true }).catch(() => {})
+      }
       return h('div', { className: 'ud-pricing-board', ref: boardRef }, controls, clock,
         PRICING_TABS.map((name) => h('div', {
           key: name, id: panelId(name), role: 'tabpanel', 'aria-labelledby': tabId(name), tabIndex: 0, hidden: tab !== name,
         }, tab !== name ? null : status ? h('div', { className: 'ud-empty' },
           h('p', { role: 'status' }, t(status)),
-          phase === PRICING_STATE_UNAVAILABLE ? h('button', {
-            className: 'ud-btn', type: 'button', onClick: () => { setPhase(null); setLoadAttempt((attempt) => attempt + 1) },
-          }, t('pricing.retry')) : null) : views[name])))
+          phase === PRICING_STATE_UNAVAILABLE ? h('div', { className: 'ud-pricing-line' },
+            h('button', {
+              className: 'ud-btn', type: 'button', onClick: () => { setPhase(null); setLoadAttempt((attempt) => attempt + 1) },
+            }, t('pricing.retry')),
+            failure === 'invalid' ? h(DeleteArmedButton, {
+              labelKey: 'pricing.reset', confirmKey: 'pricing.confirmReset', showLabel: true, t, onConfirm: resetPricing,
+            }) : null) : null,
+          saveError ? h('p', { className: 'ud-error', role: 'alert' }, saveError) : null) : views[name])))
     }
 
     // 定价规则折叠区:编辑器保持挂载以保留草稿,折叠只隐藏 body

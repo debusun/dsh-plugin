@@ -60,6 +60,7 @@ const MESSAGE_BACKUP_UNAVAILABLE = `${ERROR_PREFIX}backup snapshot unavailable`
 const MESSAGE_METHOD_NOT_ALLOWED = `${ERROR_PREFIX}method not allowed`
 const MESSAGE_RANGE_REQUIRED = `${ERROR_PREFIX}from and to are required`
 const MESSAGE_INVALID_PRICING = `${ERROR_PREFIX}invalid pricing rules`
+const MESSAGE_PRICING_FALLBACK_REQUIRED = `${ERROR_PREFIX}an unconditional */* fallback is required`
 const MESSAGE_INVALID_FEATURES = `${ERROR_PREFIX}invalid feature switches`
 const MESSAGE_FEATURES_UNAVAILABLE = `${ERROR_PREFIX}feature switches unavailable`
 const MESSAGE_INVALID_CYCLE = `${ERROR_PREFIX}invalid billing cycle`
@@ -316,7 +317,7 @@ const pricingHandler = (deps) => async (req, res) => {
   const parsed = pricingRulesSchema.safeParse((await readJsonBody(req))?.rules)
   if (!parsed.success) throw usageError(HTTP_STATUS_BAD_REQUEST, MESSAGE_INVALID_PRICING)
   if (parsed.data.length > 0 && !parsed.data.some((rule) => rule.model === GLOBAL_DEFAULT_MODEL && rule.conditions.length === 0)) {
-    throw usageError(HTTP_STATUS_BAD_REQUEST, `${ERROR_PREFIX}an unconditional */* fallback is required`)
+    throw usageError(HTTP_STATUS_BAD_REQUEST, MESSAGE_PRICING_FALLBACK_REQUIRED)
   }
   const rules = await pricing.replace(parsed.data)
   writeJson(res, { ok: true, value: { revision: pricing.revision(), rules } })

@@ -454,3 +454,12 @@ test(`规则归一双侧一致(${NORMALIZE_VECTORS.length} 向量)`, () => {
     for (const rule of host) assert.ok(vector.rules?.includes(rule), `${vector.name}: 保留原对象引用`)
   }
 })
+
+// 存量规则可缺 currency 或写 null:格式化不得把开发者字面量渲染给用户
+test('Given 规则货币缺省或为 null, When 格式化费用, Then 只输出数值不带符号', () => {
+  for (const currency of [null, undefined, '']) {
+    const text = core.formatCost(1.5, currency)
+    assert.equal(text, '1.50', `currency=${String(currency)}`)
+  }
+  assert.equal(core.formatCost(1.5, '¥'), '¥1.50')
+})

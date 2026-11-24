@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { CLIENT_SOURCE } from './client-eval.mjs'
+import { CLIENT_BODY, CLIENT_SOURCE } from './client-eval.mjs'
 
 const flush = () => new Promise(resolve => setImmediate(resolve))
 const nodes = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...(node.children ?? []).flatMap(nodes)]
@@ -95,11 +95,12 @@ function fixture({ observed = [], timeZone, time = new Date(2026, 10, 24, 9, 0).
   const stats = () => mount(slots.get('conversation.composer.dock'), { useProjection: () => usage })
   const chip = () => mount(slots.get('conversation.chat.assistant-actions'), { messageId: 'm1', useChat: select => select({ nodes: [{ kind: 'turn-tail', data: { closing: { finalNode: { messageId: 'm1' } }, tokenUsage: usage } }] }) })
   const resolve = (item, value) => item.resolve({ json: async () => ({ ok: true, value }) })
+  const resolveError = (item, message) => item.resolve({ json: async () => ({ ok: false, error: { code: 'unavailable', message } }) })
   const save = owner => {
     const button = nodes(owner.tree).find(n => n.type === 'button' && text(n) === '保存')
     assert.ok(button, '已载入编辑器保存按钮'); return button.props.onClick()
   }
-  return { panel, editor, stats, chip, settle, unmount, requests, gets, saves, resolve, save, mount, nodes, text, timers,
+  return { panel, editor, stats, chip, settle, unmount, requests, gets, saves, resolve, resolveError, save, mount, nodes, text, timers,
     get lateState() { return lateState }, advance: ms => { now += ms }, cleanup: () => mounted.filter(o => o.alive).forEach(unmount) }
 }
 
@@ -165,11 +166,31 @@ test('Given 已观察组合有分时费率 When 改快照与试探未知型号 T
   const search = nodes(view()).find(node => node.props.type === 'search')
   search.props.onChange({ target: { value: 'unknown/model' } }); await f.settle()
   assert.match(text(view()), /未观察到的型号.*unknown\/model.*#1.*全局兜底/)
-  assert.deepEqual(nodes(view()).filter(node => node.type === 'option').map(node => node.props.value), ['p/m', 'q/other'])
+  assert.deepEqual(nodes(view()).filter(node => node.type === 'option').map(node => node.props.value), [])
   search.props.onChange({ target: { value: 'p/m' } }); await f.settle()
   assert.deepEqual(nodes(view()).filter(node => node.props['data-ud-price-model']).map(node => node.props['data-ud-price-model']), ['p/m'])
   assert.ok(nodes(view()).some(node => node.type?.name === 'PricingTree'))
 }, { observed: observedPricingModels }))
+
+test('Given 宽匹配有四个平台及超长型号列表 When 搜索和翻页 Then 首屏限制渲染且其余型号仍可访问', t => withFixture(t, async f => {
+  const editor = f.editor(null)
+  f.resolve(f.gets[0], price(1)); await f.settle()
+  const initial = mountView(f, byComponent(editor, 'PricingModels'))
+  nodes(initial.tree).find(node => node.props.type === 'search').props.onChange({ target: { value: 'flash' } })
+  await f.settle()
+  const view = mountView(f, byComponent(editor, 'PricingModels'))
+  const rows = () => nodes(view.tree).filter(node => node.props['data-ud-price-model']).map(node => node.props['data-ud-price-model'])
+  assert.equal(rows().length, 60)
+  assert.equal(nodes(view.tree).filter(node => node.type === 'option').length, 40)
+  assert.ok(!rows().some(model => model.startsWith('p3/')))
+  byText(view, '下一页型号').props.onClick(); await f.settle()
+  assert.ok(rows().includes('p0/flash-24'))
+  assert.equal(rows().length, 45)
+}, {
+  observed: Array.from({ length: 100 }, (_, index) => ({
+    ...observedPricingModels[0], model: `p${Math.floor(index / 25)}/flash-${index % 25}`,
+  })),
+}))
 
 test('Given 通配规则被精确规则接管 When 打开会计徽章 Then 先展示实际型号和胜者之后可展开树与跳转', t => withFixture(t, async f => {
   const editor = f.editor('规则')
@@ -324,7 +345,7 @@ test('P11 Given another editor has a draft, When save publishes, Then draft stay
   const a = f.editor(), b = f.editor()
   f.gets.forEach(item => f.resolve(item, price(1))); await f.settle()
   const group = () => nodes(b.tree).find(n => n.type?.name === 'PricingModelGroup')
-  group().props.onModelChange('draft/model'); await f.settle()
+  renameGroup(group(), 'draft/model'); await f.settle()
   const pending = f.save(a); f.resolve(f.saves[0], price(2)); await pending; await f.settle()
   assert.equal(group().props.group.model, 'draft/model')
 }))
@@ -335,7 +356,7 @@ test('C2 Given save in flight When same editor edits Then server reply does not 
   f.gets.forEach(item => f.resolve(item, price(1))); await f.settle()
   const group = () => nodes(editor.tree).find(n => n.type?.name === 'PricingModelGroup')
   const pending = f.save(editor)
-  group().props.onModelChange('draft/model'); await f.settle()
+  renameGroup(group(), 'draft/model'); await f.settle()
   f.resolve(f.saves[0], price(2)); await pending; await f.settle()
   assert.equal(group().props.group.model, 'draft/model')
   assert.doesNotMatch(f.text(editor.tree), /已保存/)
@@ -432,8 +453,10 @@ test('Given 普通规则 When 将平台填成含斜杠的内容 Then 输入保�
   assert.deepEqual(fields().map(node => node.props.value), ['p/x', 'm'])
   assert.equal(fields()[0].props['aria-invalid'], true)
   await f.save(editor); assert.equal(f.saves.length, 0)
-  fields()[0].props.onChange({ target: { value: 'p' } }); await f.settle()
   fields()[1].props.onChange({ target: { value: 'x/m' } }); await f.settle()
+  const corrected = nodes(expand(groupOf(editor, 'p/x/m'))).filter(node => node.type === 'input')
+  assert.deepEqual(corrected.map(node => node.props.value), ['p', 'x/m'])
+  assert.equal(corrected[0].props['aria-invalid'], false)
   const pending = f.save(editor)
   const posted = f.saves[0].body.rules
   assert.ok(posted.some(item => item.model === 'p/x/m'))
@@ -447,13 +470,13 @@ test('Given 规则已有型号 When 新组中途输入相同范围与全局模�
   byText(editor, '添加模型').props.onClick(); await f.settle()
   const added = groupOf(editor, '')
   const newGroup = () => editorGroups(editor).find(group => group.props.key === added.props.key)
-  newGroup().props.onModelChange('p/m'); await f.settle()
+  renameGroup(newGroup(), 'p/m'); await f.settle()
   assert.equal(editorGroups(editor).filter(group => group.props.group.model === 'p/m').length, 2)
   await f.save(editor); assert.equal(f.saves.length, 0)
-  newGroup().props.onModelChange('*/*'); await f.settle()
+  renameGroup(newGroup(), '*/*'); await f.settle()
   const field = nodes(expand(newGroup())).find(node => node.type === 'input')
   assert.equal(field.props.readOnly, false)
-  newGroup().props.onModelChange('p/mo'); await f.settle()
+  renameGroup(newGroup(), 'p/mo'); await f.settle()
   assert.ok(groupOf(editor, 'p/m'))
   assert.ok(groupOf(editor, 'p/mo'))
 }))
@@ -470,11 +493,26 @@ test('Given 批量加入的型号已改名 When 再批量添加原型号 Then �
     nodes(batch.tree).find(node => node.type === 'form').props.onSubmit({ preventDefault() {} }); await f.settle()
   }
   await add()
-  groupOf(editor, 'p/m').props.onModelChange('p/n'); await f.settle()
+  renameGroup(groupOf(editor, 'p/m'), 'p/n'); await f.settle()
   await add()
   assert.equal(groupOf(editor, 'p/m').props.group.slots.length, 1)
   assert.equal(groupOf(editor, 'p/n').props.group.slots.length, 1)
   assert.equal(f.saves.length, 0)
+}))
+
+test('Given 组内两条附加规则 When 移除第一条 Then 第二条保留自身删除确认身份', t => withFixture(t, async f => {
+  const editor = f.editor()
+  const earlier = { ...rule(2), model: 'p/m', conditions: [{ kind: 'weekdays', days: [1] }] }
+  const later = { ...rule(3), model: 'p/m', conditions: [{ kind: 'weekdays', days: [2] }] }
+  f.resolve(f.gets[0], { revision: 1, rules: [rule(), earlier, later] }); await f.settle()
+  const cards = () => nodes(expand(groupOf(editor, 'p/m'))).filter(node => node.type?.name === 'PricingExtraRuleCard')
+  const [first, second] = cards()
+  const remove = byComponent({ tree: expand(first) }, 'DeleteArmedButton')
+  remove.props.onConfirm(); await f.settle()
+  assert.equal(cards().length, 1)
+  assert.equal(cards()[0].props.rule.price.input, 3)
+  assert.equal(cards()[0].props.key, second.props.key)
+  assert.notEqual(cards()[0].props.key, first.props.key)
 }))
 
 test('Given 月中号段 When 修改数字字段并保存 Then 请求仍使用现有 monthDays 协议和数字端点', t => withFixture(t, async f => {
@@ -517,6 +555,71 @@ test('Given 空安装 When 显式填写四个零价 Then 保存真实零价而�
   f.resolve(f.saves[0], { revision: 2, rules: posted }); await pending
 }))
 
+test('Given 畸形存量规则导致定价不可用 When 确认重置 Then 提交空表并恢复编辑', t => withFixture(t, async f => {
+  const editor = f.editor('规则')
+  f.resolve(f.gets[0], { revision: 1, rules: [{ model: 'legacy/m' }] }); await f.settle()
+  const reset = nodes(editor.tree).find(node => node.props.labelKey === 'pricing.reset')
+  assert.ok(reset, '不可用态需提供清空空表的出口')
+  reset.props.onConfirm(); await f.settle()
+  assert.equal(f.saves.length, 1)
+  assert.deepEqual(f.saves[0].body.rules, [])
+  f.resolve(f.saves[0], { revision: 2, rules: [] }); await f.settle()
+  // 写回后直接进入可用态,不再二次取价,避免用未解析的回包掩盖恢复失败
+  assert.equal(f.gets.length, 1)
+  assert.doesNotMatch(text(editor.tree), /定价规则不可用/)
+  // 恢复后规则页应回到正常空表视图
+  assert.match(text(mountView(f, byComponent(editor, 'PricingRules')).tree), /未配置/)
+}))
+
+test('Given 定价请求失败且无缓存 When 显示不可用 Then 不提供清空出口', t => withFixture(t, async f => {
+  const editor = f.editor('规则')
+  f.gets[0].reject(new Error('injected network')); await f.settle()
+  assert.match(text(editor.tree), /定价规则不可用/)
+  assert.ok(byText(editor, '重新加载定价'))
+  assert.equal(nodes(editor.tree).some(node => node.props.labelKey === 'pricing.reset'), false)
+}))
+
+test('Given 先请求失败后回包畸形 When 重新加载 Then 才出现清空出口', t => withFixture(t, async f => {
+  const editor = f.editor('规则')
+  f.gets[0].reject(new Error('injected network')); await f.settle()
+  assert.equal(nodes(editor.tree).some(node => node.props.labelKey === 'pricing.reset'), false)
+  nodes(editor.tree).find(node => node.type === 'button' && text(node) === '重新加载定价').props.onClick()
+  await f.settle()
+  assert.equal(f.gets.length, 2)
+  f.resolve(f.gets[1], { revision: 1, rules: [{ model: 'legacy/m' }] }); await f.settle()
+  assert.match(text(editor.tree), /定价规则不可用/)
+  assert.ok(nodes(editor.tree).some(node => node.props.labelKey === 'pricing.reset'), '畸形回包应给出自救出口')
+}))
+
+test('Given 清空请求失败 When 确认重置 Then 提示错误并留在不可用态', t => withFixture(t, async f => {
+  const editor = f.editor('规则')
+  f.resolve(f.gets[0], { revision: 1, rules: [{ model: 'legacy/m' }] }); await f.settle()
+  nodes(editor.tree).find(node => node.props.labelKey === 'pricing.reset').props.onConfirm(); await f.settle()
+  f.resolveError(f.saves[0], 'usage stats: pricing unavailable'); await f.settle()
+  assert.match(text(editor.tree), /pricing unavailable/)
+  assert.match(text(editor.tree), /定价规则不可用/)
+}))
+
+// 组卡 memo 判等:依赖草稿规则对象不可变,逐槽比 rule 引用覆盖字段变化
+const groupPropsEqual = new Function(`${CLIENT_BODY}\nreturn pricingGroupPropsEqual`)()
+
+test('Given 组卡 memo 判等 When 依赖变化 Then 只在必要时重渲染', () => {
+  const rule = { model: 'a/b', price: { input: 1 }, conditions: [] }
+  const base = {
+    currency: '¥', errors: new Map(), t: () => '', actions: {},
+    group: { id: 'g', model: 'a/b', slots: [{ rule, index: 0, id: 's0' }] },
+  }
+  const withGroup = (group) => ({ ...base, group })
+  assert.equal(groupPropsEqual(base, { ...base }), true, '同引用不重渲染')
+  assert.equal(groupPropsEqual(base, { ...base, currency: '$' }), false)
+  assert.equal(groupPropsEqual(base, { ...base, errors: new Map() }), false)
+  assert.equal(groupPropsEqual(base, { ...base, t: () => '' }), false)
+  assert.equal(groupPropsEqual(base, { ...base, actions: {} }), false)
+  assert.equal(groupPropsEqual(base, withGroup({ ...base.group, slots: [{ rule: { ...rule }, index: 0, id: 's0' }] })), false, '规则新对象即内容变化')
+  assert.equal(groupPropsEqual(base, withGroup({ ...base.group, slots: [{ rule, index: 1, id: 's0' }] })), false, '编号位移需重渲染')
+  assert.equal(groupPropsEqual(base, withGroup({ ...base.group, slots: [{ rule, index: 0, id: 's0' }, { rule: { ...rule }, index: 1, id: 's1' }] })), false, '增删槽位')
+})
+
 const EDITOR_RULE = {
   model: 'a/b',
   unit: 'perMillion',
@@ -527,6 +630,7 @@ const EDITOR_RULE = {
 const editorGroups = editor => nodes(editor.tree)
   .filter(node => node.type?.name === 'PricingModelGroup')
 const groupOf = (editor, model) => editorGroups(editor).find(node => node.props.group.model === model)
+const renameGroup = (group, model) => group.props.actions.rename(group.props.group.id, model)
 
 test('P13 Given 无 */* 规则 When 编辑器加载 Then 末尾合成锁定且不可删除的全局槽', t => withFixture(t, async f => {
   const editor = f.editor()
@@ -578,8 +682,5 @@ test('P16 Given 附加规则仅一条条件 When 渲染 Then 删除条件按钮�
     && node.props['aria-label'] === '删除条件').length, 0)
 }))
 
-// 复用编辑器同一分区函数:测试直接读组件 props,不重新实现判定
-const corePartition = (group) => {
-  const fallback = group.slots.find(slot => (slot.rule.conditions ?? []).length === 0)
-  return { defaultSlot: fallback ?? null }
-}
+// 取编辑器同源分区函数:测试不重新实现判定,实现变更后断言同步失效而非假通过
+const corePartition = new Function(`${CLIENT_BODY}\nreturn partitionGroupOf`)()
