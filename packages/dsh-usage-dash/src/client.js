@@ -960,7 +960,7 @@ const MESSAGES_ZH = {
   'pricing.searchPlaceholder': '也可输入完整的 平台/型号 试算',
   'pricing.estimated': '快照估算花费',
   'pricing.priced': '已定价组合',
-  'pricing.fallback': '靠兜底计价',
+  'pricing.fallback': '走全局默认价',
   'pricing.noObserved': '当前统计范围内暂无已观察到的模型。',
   'pricing.noSearchResults': '暂无匹配的已观察模型。',
   'pricing.previousModels': '上一页型号',
@@ -976,9 +976,9 @@ const MESSAGES_ZH = {
   'pricing.unconditional': '无条件',
   'pricing.showOthers': '显示其他 {n} 条规则',
   'pricing.hideOthers': '收起其他规则',
-  'pricing.withStar': '含通配',
-  'pricing.withoutStar': '无通配',
-  'pricing.globalFallback': '全局兜底',
+  'pricing.withStar': '带 *',
+  'pricing.withoutStar': '不带 *',
+  'pricing.globalFallback': '全局默认价',
   'pricing.conflict': '同优先级冲突',
   'pricing.billing': '计费 {n}',
   'pricing.taken': '被接管 {n}',
@@ -992,7 +992,7 @@ const MESSAGES_ZH = {
   'pricing.tree': '看规则树',
   'pricing.jump': '跳到模型',
   'pricing.close': '关闭',
-  'pricing.fallbackRequired': '填写无条件的全局兜底（*/*）后再保存。',
+  'pricing.fallbackRequired': '填写无条件的全局默认价（*/*）后再保存。',
   'pricing.disable': '停用定价',
   'pricing.confirmDisable': '确认清空定价草稿',
   'pricing.invalidResponse': '保存失败，定价响应无效。',
@@ -1308,8 +1308,8 @@ const MESSAGES_EN = {
   'pricing.unconditional': 'Unconditional',
   'pricing.showOthers': 'Show {n} other rules',
   'pricing.hideOthers': 'Hide other rules',
-  'pricing.withStar': 'With wildcard',
-  'pricing.withoutStar': 'No wildcard',
+  'pricing.withStar': 'With *',
+  'pricing.withoutStar': 'Without *',
   'pricing.globalFallback': 'Global fallback',
   'pricing.conflict': 'Equal-priority conflict',
   'pricing.billing': 'Billing {n}',
@@ -3974,22 +3974,22 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 --ud-bg-overlay:var(--dsw-alias-bg-layer-2);--ud-border:var(--dsw-alias-border-l2);--ud-border-strong:var(--dsw-alias-border-l3);--ud-text:var(--dsw-alias-label-primary);--ud-text-sub:var(--dsw-alias-label-secondary);--ud-text-dim:var(--dsw-alias-label-tertiary);--ud-accent:var(--dsw-alias-state-business-primary);--ud-hover-bg:var(--dsw-alias-interactive-bg-hover);--ud-shadow-lv3:var(--dsw-shadow-lv3);--ud-radius-md:var(--dsw-radius-md);--ud-radius-sm:var(--dsw-radius-sm);--ud-card:var(--dsw-alias-bg-layer-1);--ud-card-border:var(--dsw-alias-border-l2)}
 .ud-toolbar{display:flex;align-items:flex-start;gap:12px}
 .ud-toolbar-main{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 auto;min-width:0}
-.ud-group{display:flex;align-items:center;gap:2px;padding:4px;border:1px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card)}
+.ud-group{display:flex;align-items:center;gap:2px;padding:3px;border:0;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}
 .ud-seg-item{border:none;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px;padding:0 12px;height:28px;border-radius:var(--dsw-radius-sm);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
 .ud-seg-item:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.ud-seg-item--on{background:var(--dsw-alias-interactive-bg-active);color:var(--dsw-alias-label-primary);font-weight:600}
+.ud-seg-item--on{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent);color:var(--dsw-alias-brand-primary);font-weight:600}
 .ud-custom-range{display:flex;align-items:center;gap:6px}
 .ud-date-input{border:1px solid var(--ud-border-strong);border-radius:var(--dsw-radius-sm);background:var(--ud-card);color:var(--dsw-alias-label-primary);font-size:13px;padding:0 10px;height:32px;box-sizing:border-box}
 .ud-custom-sep{color:var(--dsw-alias-label-tertiary)}
-.ud-btn{border:1px solid var(--ud-border-strong);background:var(--ud-card);color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm);padding:0 14px;height:32px;font-size:14px;line-height:1;cursor:pointer;transition:background .15s,color .15s}
+.ud-btn{border:1px solid var(--ud-border-strong);background:transparent;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm);padding:0 14px;height:32px;font-size:14px;line-height:1;cursor:pointer;transition:background .15s,color .15s}
 .ud-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.ud-btn:disabled{opacity:.5;cursor:default}
+.ud-btn:disabled{opacity:.5;cursor:not-allowed}
 .ud-toolbar-side{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto;align-self:stretch}
 .ud-toolbar-side .ud-btn--text{display:inline-flex;align-items:center;height:100%}
 .ud-icon-btn{padding:0 12px}
 .ud-icon{display:inline-flex;align-items:center;justify-content:center}
 .ud-btn--text{border:none;background:transparent;color:var(--dsw-alias-label-tertiary);padding:2px 4px}
-.ud-delete-armed{color:var(--dsw-alias-state-error-primary);font-size:12px;white-space:nowrap}
+.ud-delete-armed,.ud-delete-armed:hover{background:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-bg-base);font-size:12px;white-space:nowrap}
 .ud-error{border:1px solid color-mix(in srgb,var(--dsw-alias-state-warn-primary) 45%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 12%,transparent);color:var(--dsw-alias-state-warn-label);border-radius:var(--dsw-radius-sm);padding:8px 12px;font-size:13px;line-height:20px}
 .ud-loading{display:flex;flex-direction:column;gap:8px;padding:24px 0}
 .ud-loading::before,.ud-loading::after{content:"";display:block;height:14px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-skeleton)}
@@ -4145,20 +4145,19 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pref-group-title{font-size:12px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary)}
 .ud-pref-group-desc{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
 .ud-pref-group--recent{background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 55%,transparent);border-color:var(--dsw-alias-border-l2)}
-.ud-pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.ud-pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:28px}
 .ud-pref-row--disabled .ud-pref-text{opacity:.55}
 .ud-pref-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ud-pref-title{font-size:13px;color:var(--dsw-alias-label-primary)}
 .ud-pref-desc{font-size:12px;color:var(--dsw-alias-label-tertiary)}
 .ud-rule{display:flex;flex-direction:column;gap:8px;min-width:0}
-.ud-card>.ud-rule{border-top:.5px solid var(--dsw-alias-border-l1);padding-top:12px}
-.ud-card>.ud-rule-group-head+.ud-rule{border-top:0;padding-top:0}
-.ud-rule-group{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);padding:10px 12px}
+.ud-rule-group>.ud-rule{border-top:.5px solid var(--dsw-alias-border-l1);padding-top:12px}
+.ud-rule-group>.ud-rule-group-head+.ud-rule{border-top:0;padding-top:0}
+.ud-rule-group{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-sm);padding:12px 16px}
 .ud-rule-group-head{display:flex;align-items:flex-end;gap:8px}
 .ud-rule-group-head .ud-field{flex:1}
 .ud-rule-group-slots{display:flex;flex-direction:column;gap:8px}
 .ud-rule-group-slots{display:flex;flex-direction:column;gap:8px;min-width:0}
-.ud-rule>.ud-pricing-line .ud-btn--text{margin-inline-start:auto}
 .ud-slot-head{display:flex;align-items:flex-end;gap:8px}
 .ud-slot-head .ud-price-grid{flex:1}
 .ud-rule-cond{font-size:11px;color:var(--dsw-alias-label-tertiary)}
@@ -4171,34 +4170,43 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-cond-fields .ud-input{width:auto}
 .ud-cond-add{display:flex;gap:6px;flex-wrap:wrap}
 .ud-field{display:flex;flex-direction:column;gap:4px;min-width:0}
-.ud-field-label{font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.ud-field-label{font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
 .ud-field-error{font-size:11px;color:var(--dsw-alias-state-error-primary)}
-.ud-input{border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:14px;line-height:20px;min-height:32px;padding:5px 8px;min-width:0;width:100%;box-sizing:border-box}
+.ud-input{border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:14px;line-height:20px;min-height:36px;padding:4px 8px;min-width:0;width:100%;box-sizing:border-box}
 .ud-price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .ud-price-grid .ud-input{text-align:right}
 .ud-price-input{position:relative;display:block}
-.ud-price-input .ud-input{padding-left:20px}
-.ud-price-currency{position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dsw-alias-label-tertiary);pointer-events:none}
+.ud-price-input .ud-input{padding-right:20px}
+.ud-price-currency{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dsw-alias-label-tertiary);pointer-events:none}
 .ud-unit-note{font-size:11px;color:var(--dsw-alias-label-tertiary);white-space:nowrap}
 .ud-pricing-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ud-pricing-board,.ud-pricing-stack{display:grid;gap:12px;min-width:0}
+.ud-pricing-stack{gap:16px}
 .ud-pricing-board [hidden]{display:none!important}
 .ud-pricing-toolbar,.ud-pricing-line,.ud-pricing-clock{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .ud-pricing-toolbar{justify-content:space-between}
-.ud-pricing-tabs .ud-seg-item{min-height:30px}
+.ud-pricing-tabs .ud-seg-item{height:30px}
 .ud-pricing-clock{padding:8px;background:var(--dsw-alias-bg-layer-2);border-radius:var(--dsw-radius-md);align-items:end}
-.ud-pricing-board :is(button,input,select,textarea,summary,[tabindex]):focus-visible,.ud-pricing-dialog :is(button,textarea):focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
-.ud-pricing-board .ud-input,.ud-pricing-dialog .ud-input{min-height:32px}
+.ud-pricing-board :is(button,input,select,textarea,summary,[tabindex]):focus-visible,.ud-pricing-dialog :is(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.ud-pricing-board .ud-input,.ud-pricing-dialog .ud-input{min-height:36px}
 .ud-pricing-pattern{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:1;min-width:0}
 .ud-pricing-pattern .ud-field-error{grid-column:1/-1}
 .ud-pricing-stack{display:grid;gap:12px;min-width:0}
 .ud-pricing-toolrow{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:.5px solid var(--dsw-alias-border-l1)}
-.ud-pricing-rules{display:grid;gap:24px;min-width:0}
-.ud-pricing-group{display:grid;gap:8px;min-width:0}
+.ud-pricing-rules{display:grid;gap:16px;min-width:0}
+.ud-pricing-group{display:grid;gap:0;min-width:0}
+.ud-pricing-group-head{display:flex;align-items:baseline;gap:6px;padding-bottom:6px}
+.ud-pricing-group-title{font-size:12px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary)}
 .ud-pricing-group-count{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
-.ud-pricing-rule{padding:8px 12px}
-.ud-pricing-rule-head{display:flex;align-items:center;gap:8px;width:100%;min-height:24px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;border-radius:var(--dsw-radius-sm)}
-.ud-pricing-rule-head:hover{color:var(--dsw-alias-label-primary)}
+.ud-pricing-rows{display:flex;flex-direction:column;min-width:0}
+.ud-pricing-rule{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:.5px solid var(--dsw-alias-border-l1);min-width:0;cursor:pointer}
+.ud-pricing-rule:last-child{border-bottom:0}
+.ud-pricing-rule--open{padding:8px;margin:0 -8px;border-radius:var(--dsw-radius-sm);background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 55%,transparent)}
+.ud-pricing-empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 0;text-align:center}
+.ud-pricing-empty-text{margin:0;font-size:14px;line-height:22px;color:var(--dsw-alias-label-secondary)}
+.ud-pricing-panel{border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-sm);padding:12px 16px;min-width:0}
+.ud-pricing-rule-head{display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;border-radius:var(--dsw-radius-sm)}
+.ud-pricing-rule-head:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .ud-pricing-rule-no{flex:none;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
 .ud-pricing-rule-model{flex:1;min-width:0;font-size:13px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ud-pricing-rule-caret{display:flex;align-items:center;justify-content:center;flex:none;color:var(--dsw-alias-label-tertiary);transition:transform .15s}
@@ -4206,9 +4214,10 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-rule-head[aria-expanded=true] .ud-pricing-rule-caret{transform:rotate(90deg)}
 .ud-pricing-rule-foot{display:flex;align-items:center;gap:8px;margin-top:2px;min-width:0}
 .ud-pricing-rule-foot .ud-pricing-note{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary)}
-.ud-btn--danger-text{height:28px;padding:0 10px;border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.ud-btn--danger-text{height:28px;padding:0 10px;border-color:transparent;color:var(--dsw-alias-state-error-primary)}
 .ud-btn--danger-text:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover-danger);border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
-.ud-pricing-rule-tags{display:flex;flex:none;gap:6px}
+.ud-pricing-rule-tags{display:flex;flex:none;gap:6px;opacity:.75;transition:opacity .15s}
+.ud-pricing-rule:hover .ud-pricing-rule-tags{opacity:1}
 .ud-rule>.ud-pricing-line .ud-btn--text{height:28px;padding:0 8px}
 .ud-slot-no{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums;font-family:var(--ds-font-family-code)}
 .ud-pricing-board h3,.ud-pricing-board p,.ud-pricing-dialog h3,.ud-pricing-dialog p{margin:0}
@@ -4219,11 +4228,12 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-summary dd,.ud-pricing-prices dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .ud-pricing-summary dd{font-size:18px;font-weight:600;line-height:24px}
 .ud-pricing-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.ud-pricing-model{border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-row[aria-expanded=true] .ud-pricing-rule-caret{transform:rotate(90deg)}
+.ud-pricing-model + .ud-pricing-model{border-top:.5px solid var(--dsw-alias-border-l1)}
 .ud-pricing-row{width:100%;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:6px 4px;min-height:32px;text-align:start;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .ud-pricing-row code{flex:1}
 .ud-pricing-row[aria-expanded=true],.ud-pricing-tree-row--winner{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent)}
-.ud-pricing-chip{display:inline-flex;align-items:center;height:18px;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px;line-height:18px;white-space:nowrap}
+.ud-pricing-chip{display:inline-flex;align-items:center;height:18px;font-weight:500;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px;line-height:18px;white-space:nowrap}
 .ud-pricing-chip--button{border:0;cursor:pointer;color:var(--dsw-alias-label-secondary);padding:0 8px;font-size:11px;line-height:18px;font-family:inherit}
 .ud-pricing-chip--button:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .ud-pricing-chip--button:disabled{opacity:.5;cursor:not-allowed}
@@ -4231,21 +4241,20 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-tree{border-inline-start:2px solid var(--ud-card-border);padding-inline-start:8px;margin:8px 0 8px 8px}
 .ud-pricing-tree ul,.ud-pricing-rule-detail ul,.ud-pricing-dialog-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .ud-pricing-tree-row{display:grid;gap:6px;padding:8px;border-radius:var(--dsw-radius-sm)}
-.ud-pricing-rule-detail{display:grid;gap:6px;margin:8px 0 0;padding-top:8px;border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-rule-detail{display:grid;gap:6px;margin:6px 0 0}
 .ud-pricing-prices dt{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
 .ud-pricing-prices dd{font-size:13px;line-height:20px}
-.ud-pricing-dialog{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-shadow-lv3);font-size:14px;line-height:22px}
+.ud-pricing-dialog{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-shadow-lv3);font-size:14px;line-height:22px}
 .ud-pricing-dialog[open],.ud-pricing-dialog form{display:grid;gap:12px}
-.ud-pricing-dialog::backdrop{background:color-mix(in srgb,var(--dsw-alias-label-primary) 24%,transparent)}
+.ud-pricing-dialog::backdrop{background:color-mix(in srgb,var(--dsw-alias-label-primary) 45%,transparent)}
 .ud-pricing-dialog-list li{padding:8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1)}
 .ud-pricing-dialog button[aria-pressed=true]{border-color:var(--dsw-alias-brand-primary)}
 .ud-pricing-confirm{justify-content:flex-end}
-.ud-pricing-primary{background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:var(--dsw-alias-brand-primary);font-weight:600}
-.ud-pricing-primary:not(:disabled):hover{background:var(--dsw-alias-button-primary-hover);color:var(--dsw-alias-bg-base)}
+.ud-btn--primary{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);font-weight:600}
+.ud-btn--primary:not(:disabled):hover{border-color:var(--dsw-alias-button-primary-hover);background:var(--dsw-alias-button-primary-hover);color:var(--dsw-alias-bg-base)}
 .ud-pricing-help{width:fit-content;color:var(--dsw-alias-label-secondary);text-decoration:underline dotted;cursor:help;font-size:12px}
 @media(min-width:620px){.ud-pricing-summary,.ud-pricing-prices{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:520px){.ud-pricing-board .ud-price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ud-pricing-board .ud-slot-head{flex-wrap:wrap}.ud-pricing-board .ud-slot-head .ud-price-grid{flex:1 0 100%}}
-@media(pointer:coarse){.ud-pricing-board :is(button,summary),.ud-pricing-dialog button{min-height:44px}}
 .ud-rule-add{border:.5px dashed var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-tertiary);padding:5px 10px;font-size:12px;line-height:20px;text-align:start;cursor:pointer}
 .ud-rule-add:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 /* dock 内并列条目:官方 pill 满宽不动,空间不足时高收缩因子让自身先收缩(min-width:0 配合 ellipsis),挤压力不转嫁官方 */
@@ -6057,7 +6066,7 @@ ${HUD_CSS}
     function PricingTree({ row, rules, t }) {
       const [othersOpen, setOthersOpen] = useState(false)
       const detailsId = React.useId()
-      const others = rules.filter((rule) => rule !== row.winner)
+      const others = (row.candidates ?? []).filter((rule) => rule !== row.winner)
       const entry = (rule) => h('li', { key: pricingRuleNumber(rules, rule), className: cx('ud-pricing-tree-row', rule === row.winner && 'ud-pricing-tree-row--winner') },
         h('div', { className: 'ud-pricing-line' },
           h('code', null, `${pricingRuleNumber(rules, rule)} ${rule.model}`),
@@ -6115,7 +6124,7 @@ ${HUD_CSS}
       }, h('code', null, label), h('span', { className: cx('ud-pricing-note', !row.winner && 'ud-pricing-warn') },
         row.winner ? `${pricingRuleNumber(rules, row.winner)} · ${t('priceInput')} ${row.winner.currency ?? ''}${row.winner.price.input} · ${t('priceOutput')} ${row.winner.currency ?? ''}${row.winner.price.output}` : t('pricing.unpriced')),
       row.winner && isPricingFallback(row.winner) ? h('span', { className: 'ud-pricing-chip' }, t('pricing.globalFallback')) : null,
-      h('span', { 'aria-hidden': true }, selectedModel === row.model ? '▾' : '▸'))
+      h('span', { className: 'ud-pricing-rule-caret', 'aria-hidden': 'true' }, h(Icon, { paths: ICONS.chevron })))
       const modelDetails = (row, id) => h('div', { id, hidden: selectedModel !== row.model }, selectedModel === row.model
         ? h(PricingTree, { key: row.model, row, rules, t }) : null)
       return h('div', { className: 'ud-pricing-stack' },
@@ -6133,15 +6142,17 @@ ${HUD_CSS}
             },
           })),
         h('datalist', { id: listId }, suggestions),
-        probe ? h('div', { className: 'ud-card' },
+        probe ? h('div', { className: 'ud-pricing-panel' },
           h('div', { className: 'ud-pricing-note' }, t('pricing.probe')),
           modelToggle(probe, probe.model, `${listId}-probe`), modelDetails(probe, `${listId}-probe`)) : null,
         h('dl', { className: 'ud-pricing-summary' }, totals.map(([key, value]) => h('div', { className: 'ud-card', key },
           h('dt', null, t(key)), h('dd', null, value)))),
         rows.length > priced.length ? h('p', { className: 'ud-pricing-warn' }, t('pricing.unpricedCount', { n: rows.length - priced.length })) : null,
-        !rules.length ? h('div', { className: 'ud-pricing-line' }, h('span', { className: 'ud-pricing-note' }, t('pricingNotConfigured')),
-          h('button', { className: 'ud-btn', type: 'button', onClick: onEdit }, t('pricing.configure'))) : null,
-        groups.length === 0 ? h('p', { className: 'ud-empty' }, t(rows.length ? 'pricing.noSearchResults' : 'pricing.noObserved')) : null,
+        !rules.length ? h('div', { className: 'ud-pricing-empty' },
+          h('p', { className: 'ud-pricing-empty-text' }, t('pricingNotConfigured')),
+          h('button', { className: 'ud-btn ud-btn--primary', type: 'button', onClick: onEdit }, t('pricing.configure'))) : null,
+        groups.length === 0 ? h('div', { className: 'ud-pricing-empty' },
+          h('p', { className: 'ud-pricing-empty-text' }, t(rows.length ? 'pricing.noSearchResults' : 'pricing.noObserved'))) : null,
         groups.map(([provider, items], index) => {
           const open = exactObserved || (providerOverrides.get(provider) ?? index < (search ? PRICING_SEARCH_AUTO_GROUPS : 1))
           const detailsId = `${listId}-provider-${encodeURIComponent(provider)}`
@@ -6149,12 +6160,12 @@ ${HUD_CSS}
           const page = Math.min(providerPages.get(provider) ?? 0, lastPage)
           const start = page * PRICING_MODELS_PER_PAGE
           const paginate = (next) => setProviderPages((previous) => new Map(previous).set(provider, next))
-          return h('div', { key: provider, className: 'ud-card' },
+          return h('div', { key: provider, className: 'ud-pricing-panel' },
             h('button', {
               className: 'ud-pricing-row', type: 'button', 'aria-expanded': open, 'aria-controls': detailsId,
               onClick: () => setProviderOverrides((previous) => new Map(previous).set(provider, !open)),
             }, h('code', null, provider), h('span', { className: 'ud-pricing-note' }, t('pricing.modelCount', { n: items.length })),
-            h('span', { 'aria-hidden': true }, open ? '▾' : '▸')),
+            h('span', { className: 'ud-pricing-rule-caret', 'aria-hidden': 'true' }, h(Icon, { paths: ICONS.chevron }))),
             h('div', { id: detailsId, hidden: !open }, open ? items.slice(start, start + PRICING_MODELS_PER_PAGE).map((row) => {
               const id = `${listId}-${encodeURIComponent(row.model)}`
               return h('div', { key: row.model, className: 'ud-pricing-model' }, modelToggle(row, modelNameOf(row.model), id), modelDetails(row, id))
@@ -6244,32 +6255,35 @@ ${HUD_CSS}
       const labels = [false, true]
       const items = useMemo(() => rules.map((rule, index) => ({ rule, index, segments: splitRuleSegments(rule.model) ?? ['', rule.model] }))
         .sort((a, b) => a.segments[0].localeCompare(b.segments[0], 'en') || a.segments[1].localeCompare(b.segments[1], 'en') || a.index - b.index), [rules])
-      const badge = (rule, kind, n) => h('button', {
+      const badge = (rule, kind, n) => n > 0 ? h('button', {
         type: 'button', className: 'ud-pricing-chip ud-pricing-chip--button',
-        onClick: () => setDetail({ rule, kind }),
-      }, t(`pricing.${kind}`, { n }))
+        onClick: (event) => { event?.stopPropagation(); setDetail({ rule, kind }) },
+      }, t(`pricing.${kind}`, { n })) : null
       return h('div', { className: 'ud-pricing-rules' },
-        !rules.length ? h('div', { className: 'ud-pricing-line' }, h('span', { className: 'ud-pricing-note' }, t('pricingNotConfigured')),
-          h('button', { className: 'ud-btn', type: 'button', onClick: onEdit }, t('pricing.configure'))) : null,
+        !rules.length ? h('div', { className: 'ud-pricing-empty' },
+          h('p', { className: 'ud-pricing-empty-text' }, t('pricingNotConfigured')),
+          h('button', { className: 'ud-btn ud-btn--primary', type: 'button', onClick: onEdit }, t('pricing.configure'))) : null,
         labels.map((hasStar) => {
           const group = items.filter(({ rule }) => rule.model.includes(MODEL_WILDCARD) === hasStar)
           if (!group.length) return null
-          return h('section', { key: String(hasStar), className: 'ud-section' },
-            h('div', { className: 'ud-section-head' },
-              h('span', { className: 'ud-section-title' }, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
+          return h('section', { key: String(hasStar), className: 'ud-pricing-group' },
+            h('div', { className: 'ud-pricing-group-head' },
+              h('span', { className: 'ud-pricing-group-title' }, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
               h('span', { className: 'ud-pricing-group-count' }, String(group.length))),
-            h('div', { className: 'ud-pricing-group' }, group.map(({ rule, index }) => {
+            h('div', { className: 'ud-pricing-rows' }, group.map(({ rule, index }) => {
               const stats = analysis.ruleStats.get(rule)
               const key = `${index}:${rule.model}`
-              return h('article', { key, className: 'ud-card ud-pricing-rule' },
+              const open = expanded.has(key)
+              const toggle = () => setExpanded((previous) => {
+                const next = new Set(previous)
+                if (next.has(key)) next.delete(key)
+                else next.add(key)
+                return next
+              })
+              return h('article', { key, className: cx('ud-pricing-rule', open && 'ud-pricing-rule--open'), onClick: toggle },
                 h('button', {
-                  type: 'button', className: 'ud-pricing-rule-head', 'aria-expanded': expanded.has(key),
-                  onClick: () => setExpanded((previous) => {
-                    const next = new Set(previous)
-                    if (next.has(key)) next.delete(key)
-                    else next.add(key)
-                    return next
-                  }),
+                  type: 'button', className: 'ud-pricing-rule-head', 'aria-expanded': open,
+                  onClick: (event) => { event?.stopPropagation(); toggle() },
                 },
                   h('span', { className: 'ud-pricing-rule-no' }, `#${index + 1}`),
                   h('code', { className: 'ud-pricing-rule-model' }, rule.model),
@@ -6279,7 +6293,7 @@ ${HUD_CSS}
                 h('div', { className: 'ud-pricing-rule-foot' },
                   h('span', { className: 'ud-pricing-note' }, pricingConditionsText(rule, t)),
                   h('span', { className: 'ud-pricing-rule-tags' }, badge(rule, 'billing', stats.billing.length), badge(rule, 'taken', stats.taken.length))),
-                expanded.has(key) ? h(PricingRuleDetails, { rule, stats, rules, t }) : null)
+                open ? h(PricingRuleDetails, { rule, stats, rules, t }) : null)
             })))
         }),
         detail ? h(PricingRuleModels, { detail, analysis, rules, t, onClose: () => setDetail(null), onJump }) : null)
@@ -6344,7 +6358,7 @@ ${HUD_CSS}
                 : `${t('pricing.billing', { n: row.billing })} · ${t('pricing.taken', { n: row.taken })}${row.conflicts ? ` · ${t('pricing.conflict')} ${row.conflicts}` : ''}`)))) : null,
           h('div', { className: 'ud-pricing-line ud-pricing-confirm' },
             h('button', { className: 'ud-btn', type: 'button', onClick: onClose }, t('pricing.batchCancel')),
-            h('button', { className: 'ud-btn ud-pricing-primary', type: 'submit', disabled: !additions.length }, t('pricing.batchConfirm')))))
+            h('button', { className: 'ud-btn ud-btn--primary', type: 'submit', disabled: !additions.length }, t('pricing.batchConfirm')))))
     }
 
     const DRAFT_GROUP = Symbol('pricing draft group')
@@ -6609,7 +6623,7 @@ ${HUD_CSS}
                   editRules((prev) => applyCurrencyToRules(prev, symbol))
                 },
               }, symbol))),
-            h('button', { className: 'ud-btn ud-pricing-primary', type: 'button', disabled: saving, onClick: save }, t('save')))),
+            h('button', { className: 'ud-btn ud-btn--primary', type: 'button', disabled: saving, onClick: save }, t('save')))),
         saveError || errors.size ? h('div', { className: 'ud-error', role: 'alert' }, saveError || t(errors.get('fallback') ?? 'pricing.validationSummary')) : null,
         h('div', { className: 'ud-pricing-line' },
           h(HintText, { className: 'ud-pricing-help', text: t('pricing.help'), tag: 'span' }, t('pricing.helpLabel')),
