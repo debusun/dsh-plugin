@@ -191,6 +191,17 @@ test('Given 有具体型号规则但无观察行 When 渲染定价折叠区 Then
   assert.deepEqual(byComponent(fold, 'PricingEditor').props.observed, [{ model: 'p/m' }])
 }, { observed: [] }))
 
+test('Given 已有观察行且规则另有具体型号 When 渲染定价折叠区 Then 合并配置型号', t => withFixture(t, async f => {
+  const panel = f.panel()
+  f.resolve(f.gets[0], { revision: 1, rules: [rule(5), { ...rule(6), model: 'Alpha/sonnet-4.5' }] }); await f.settle()
+  const section = byComponent(panel, 'PricingSection')
+  const fold = f.mount(section.type, section.props)
+  assert.deepEqual(
+    byComponent(fold, 'PricingEditor').props.observed.map((row) => row.model),
+    ['p/m', 'q/other', 'Alpha/sonnet-4.5'],
+  )
+}, { observed: observedPricingModels }))
+
 test('Given 聚合返回观察行 When 渲染定价折叠区 Then 将完整观察行透传', t => withFixture(t, async f => {
   const panel = f.panel()
   f.resolve(f.gets[0], price(1)); await f.settle()

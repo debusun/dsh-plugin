@@ -6826,8 +6826,7 @@ ${HUD_CSS}
           saveError ? h('p', { className: 'ud-error', role: 'alert' }, saveError) : null) : views[entry.id])))
     }
 
-    // 规则中能落到具体型号的条目:没有观察行时仍让模型视图可查看价格,
-    // 通配符规则无法还原成真实型号,不在这里伪造
+    // 规则中能落到具体型号的条目;通配符不是真实型号,只在规则视图展示
     function pricingRuleModels(rules) {
       if (!Array.isArray(rules)) return []
       const seen = new Set()
@@ -6842,13 +6841,25 @@ ${HUD_CSS}
       return rows
     }
 
+    // 模型视图要覆盖「已配置」和「已观察」两类来源:规则先配好、尚无用量时也要能看价
+    function pricingModelRows(observed, rules) {
+      const rows = Array.isArray(observed) ? [...observed] : []
+      const seen = new Set(rows.map((row) => row.model))
+      for (const row of pricingRuleModels(rules)) {
+        if (!seen.has(row.model)) {
+          seen.add(row.model)
+          rows.push(row)
+        }
+      }
+      return rows
+    }
+
     // 定价规则折叠区:编辑器保持挂载以保留草稿,折叠只隐藏 body
     function PricingSection({ rules = null, observed, timeZone, modelColors, t = defaultT }) {
       const [open, setOpen] = useState(false)
       const summary = !Array.isArray(rules) ? undefined
         : rules.length > 0 ? t('pricingRuleCount', { n: rules.length }) : t('pricingNotConfigured')
-      // 用量范围为空(含切到无数据工作区)时回落到规则型号,避免有规则却整块空白
-      const effectiveObserved = observed?.length ? observed : pricingRuleModels(rules)
+      const effectiveObserved = pricingModelRows(observed, rules)
       return h(SectionFold, {
         title: t('pricing'),
         description: t('pricingSectionDesc'),
