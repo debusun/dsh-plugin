@@ -4209,6 +4209,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-search-input{position:relative;display:flex;align-items:center;min-width:0}
 .ud-pricing-search-input>svg{position:absolute;inset-inline-start:10px;color:var(--dsw-alias-label-secondary);pointer-events:none}
 .ud-pricing-search-input .ud-input{padding-inline-start:32px}
+.ud-pricing-search-input .ud-input::-webkit-calendar-picker-indicator{display:none}
 .ud-pricing-clock-group{flex:none}
 .ud-pricing-toolbar>.ud-pricing-clock-group{margin-inline-start:auto}
 .ud-pricing-board .ud-pricing-clock-toggle{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm)}
