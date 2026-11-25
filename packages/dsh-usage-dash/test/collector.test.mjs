@@ -5,7 +5,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { UsageCollector, workspaceIdForPath, workspaceIdForSession, workspacePathKey } from '../src/collector.js'
+import { UsageCollector, isSyntheticWorkspaceId, workspaceIdForPath, workspaceIdForSession, workspacePathKey } from '../src/collector.js'
 import { modelUsageProjectionDefinition } from '../src/session-models.js'
 
 const local = (y, mo, d, h = 0, mi = 0) => new Date(y, mo - 1, d, h, mi).getTime()
@@ -1447,7 +1447,7 @@ test('宿主未枚举的旧会话按 header.cwd 命中已注册工作区', () =>
   const resolve = (id) => workspaceIdForSession(id, { bySession, byPath, headerOf: (key) => headers.get(key) })
   assert.equal(resolve('orphan'), 'ws-repo')
   assert.equal(resolve('nested'), 'ws-repo', '子目录归入父工作区')
-  assert.equal(resolve('sibling'), '(workspace-unknown)', '同名前缀不能误归')
+  assert.ok(isSyntheticWorkspaceId(resolve('sibling')), '同名前缀不能误归，未注册目录用合成分组')
   assert.equal(resolve('member'), 'ws-member', '注册成员优先于路径兜底')
 })
 

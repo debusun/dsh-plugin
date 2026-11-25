@@ -891,6 +891,7 @@ const MESSAGES_ZH = {
   allModels: '全部模型',
   modelFilter: '模型筛选',
   workspaceUsage: '工作区用量',
+  workspaceDeleted: '已删除工作区',
   workspaceUsageHint: '按当前时间范围比较各工作区的 token 用量',
   workspaceUnknown: '未知工作区',
   workspaceUsageEmpty: '当前范围内暂无工作区用量。',
@@ -1238,6 +1239,7 @@ const MESSAGES_EN = {
   allModels: 'All models',
   modelFilter: 'Model filter',
   workspaceUsage: 'Workspace usage',
+  workspaceDeleted: 'Deleted workspace',
   workspaceUsageHint: 'Compare token usage by workspace in the selected range',
   workspaceUnknown: 'Unknown workspace',
   workspaceUsageEmpty: 'No workspace usage in this range.',
@@ -1606,11 +1608,16 @@ const usageModelsOf = (view, grouped, pointView) => (
 )
 
 // 工作区对比行:工作区注册表与用量聚合取并集,零用量行不进表;模型筛选按拆分重算
-function workspaceUsageRows(byWorkspace, workspaces, model, unknownLabel) {
+function workspaceDisplayName(workspace, deletedLabel) {
+  if (workspace?.deleted) return `${deletedLabel || workspace.id} ${String(workspace.id).slice(0, 8)}`
+  return workspace?.title || workspace?.path || workspace?.id || ''
+}
+
+function workspaceUsageRows(byWorkspace, workspaces, model, unknownLabel, deletedLabel) {
   const usage = Array.isArray(byWorkspace) ? byWorkspace : []
   const known = Array.isArray(workspaces) ? workspaces : []
   const byId = new Map(usage.map((item) => [item.workspaceId, item]))
-  const names = new Map(known.map((item) => [item.id, item.title || item.path || item.id]))
+  const names = new Map(known.map((item) => [item.id, workspaceDisplayName(item, deletedLabel)]))
   const ids = new Set(known.map((item) => item.id))
   for (const item of usage) ids.add(item.workspaceId)
   return [...ids].map((id) => {
@@ -5117,7 +5124,7 @@ ${HUD_CSS}
     // 工作区用量对比:统计卡之外的独立视图,按 token 量排序;
     // 选中模型时用模型拆分重算,避免把总量误当成模型用量
     function WorkspaceUsage({ byWorkspace = [], workspaces = [], model = '', t = defaultT }) {
-      const rows = workspaceUsageRows(byWorkspace, workspaces, model, t('workspaceUnknown'))
+      const rows = workspaceUsageRows(byWorkspace, workspaces, model, t('workspaceUnknown'), t('workspaceDeleted'))
       const total = rows.reduce((sum, row) => sum + row.tokens, 0)
       const max = rows.reduce((value, row) => Math.max(value, row.tokens), 0)
       return h('div', { className: 'ud-section ud-workspace-usage' },
@@ -7553,8 +7560,8 @@ ${HUD_CSS}
           h('option', { value: '' }, t('allWorkspaces')),
           workspaces.map((workspace) => h('option', {
             key: workspace.id, value: workspace.id,
-            title: workspace.path || workspace.title,
-          }, workspace.title || workspace.path || workspace.id))))
+            title: workspaceDisplayName(workspace, t('workspaceDeleted')),
+          }, workspaceDisplayName(workspace, t('workspaceDeleted'))))))
         : null
 
       return h('div', { className: 'ud-panel' },

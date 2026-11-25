@@ -1,4 +1,5 @@
 import { WORKSPACE_UNKNOWN } from './store.js'
+import { isSyntheticWorkspaceId } from './workspace-id.js'
 import { costOf, matchPrice } from './pricing.js'
 
 export const MAX_SLOTS = 2000
@@ -96,23 +97,66 @@ const percentOf = (part, total) => (total === 0 ? 0 : (part / total) * PERCENT_S
 
 const rowTokens = (row) => row.inputTokens + row.outputTokens + row.cacheReadTokens + row.cacheWriteTokens
 
+// 无注册目录的分组合成门槛:主会话数必须严格大于它才单独展示;
+// 不足门槛的合成行并回未知,不能因为分组而把总量拆丢。
+export const SYNTHETIC_WORKSPACE_MIN_SESSIONS = 3
+
+const sessionCountsOf = (sessionRows) => {
+  const counts = new Map()
+  for (const row of sessionRows) {
+    if (row === null || typeof row !== 'object' || !Array.isArray(row.sessions)) continue
+    const workspaceId = typeof row.workspaceId === 'string' && row.workspaceId !== '' ? row.workspaceId : WORKSPACE_UNKNOWN
+    if (!counts.has(workspaceId)) counts.set(workspaceId, new Set())
+    const sessions = counts.get(workspaceId)
+    for (const id of row.sessions) sessions.add(id)
+  }
+  return new Map([...counts].map(([id, sessions]) => [id, sessions.size]))
+}
+
+const mergeWorkspaceGroup = (target, source) => {
+  target.tokens += source.tokens
+  target.requests += source.requests
+  target.turns += source.turns
+  for (const day of source.activeDays) target.activeDays.add(day)
+  for (const [model, entry] of source.models) {
+    const current = target.models.get(model)
+    if (current === undefined) {
+      target.models.set(model, {
+        model: entry.model,
+        tokens: entry.tokens,
+        requests: entry.requests,
+        turns: entry.turns,
+        activeDays: new Set(entry.activeDays),
+      })
+      continue
+    }
+    current.tokens += entry.tokens
+    current.requests += entry.requests
+    current.turns += entry.turns
+    for (const day of entry.activeDays) current.activeDays.add(day)
+  }
+}
+
+const emptyWorkspaceGroup = (workspaceId) => ({
+  workspaceId,
+  tokens: 0,
+  requests: 0,
+  turns: 0,
+  activeDays: new Set(),
+  models: new Map(),
+})
+
 // 工作区对比:按行所属工作区聚合,同时保留模型拆分供界面按模型筛选;
-// 零 token 的 turn 行仍计入请求/轮次,不把工作区用量误报成零
-function aggregateWorkspaces(rows) {
+// 零 token 的 turn 行仍计入请求/轮次,不把工作区用量误报成零。合成目录
+// 只有主会话数过门槛才保留,否则并回未知分组,保证总数不变。
+function aggregateWorkspaces(rows, workspaceSessionCounts) {
   const groups = new Map()
   for (const row of rows) {
     const workspaceId = typeof row.workspaceId === 'string' && row.workspaceId !== '' ? row.workspaceId : WORKSPACE_UNKNOWN
     const tokens = rowTokens(row)
     let group = groups.get(workspaceId)
     if (!group) {
-      group = {
-        workspaceId,
-        tokens: 0,
-        requests: 0,
-        turns: 0,
-        activeDays: new Set(),
-        models: new Map(),
-      }
+      group = emptyWorkspaceGroup(workspaceId)
       groups.set(workspaceId, group)
     }
     group.tokens += tokens
@@ -130,6 +174,17 @@ function aggregateWorkspaces(rows) {
       model.turns += row.turns
       model.activeDays.add(row.bucket.slice(0, DAY_KEY_WIDTH))
     }
+  }
+  for (const [workspaceId, group] of groups) {
+    if (!isSyntheticWorkspaceId(workspaceId)) continue
+    if ((workspaceSessionCounts?.get(workspaceId) ?? 0) > SYNTHETIC_WORKSPACE_MIN_SESSIONS) continue
+    let unknown = groups.get(WORKSPACE_UNKNOWN)
+    if (unknown === undefined) {
+      unknown = emptyWorkspaceGroup(WORKSPACE_UNKNOWN)
+      groups.set(WORKSPACE_UNKNOWN, unknown)
+    }
+    mergeWorkspaceGroup(unknown, group)
+    groups.delete(workspaceId)
   }
   return [...groups.values()]
     .map((group) => ({
@@ -160,7 +215,7 @@ function countSessions(sessionRows) {
 // 回落 outputTokens,聚合随新数据自然收敛
 const speedTokensOf = (row) => (row.durationMs ? row.decodeTokens ?? row.outputTokens : 0)
 
-export function aggregateRange(rows, g, from, to, sessionRows = []) {
+export function aggregateRange(rows, g, from, to, sessionRows = [], workspaceSessionCounts) {
   const form = BUCKET_FORMS[g]
   const slots = enumerateBucketKeys(form)(from, to).map((key) => emptySlot(key))
   const slotByKey = new Map(slots.map((slot) => [slot.day, slot]))
@@ -279,7 +334,7 @@ export function aggregateRange(rows, g, from, to, sessionRows = []) {
     daily,
     models,
     providers,
-    byWorkspace: aggregateWorkspaces(workspaceRows),
+    byWorkspace: aggregateWorkspaces(workspaceRows, workspaceSessionCounts ?? sessionCountsOf(sessionRows)),
   }
   if (truncated) result.truncated = true
   return result

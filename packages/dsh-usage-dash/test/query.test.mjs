@@ -9,6 +9,7 @@ import {
   aggregateRange,
   attachCosts,
 } from '../src/query.js'
+import { syntheticWorkspaceId } from '../src/workspace-id.js'
 
 const makeRow = (overrides = {}) => ({
   bucket: '2020-01-01',
@@ -186,6 +187,16 @@ test('D 聚合附带工作区用量与模型拆分', () => {
       models: [{ model: 'm1', tokens: 10, requests: 1, turns: 0, activeDays: 1 }],
     },
   ])
+})
+
+test('合成目录只有主会话数大于 3 才单独成组,否则并回未知', () => {
+  const id = syntheticWorkspaceId('/work/repo')
+  const rows = [makeRow({ workspaceId: id, model: 'm1', inputTokens: 10, requests: 1 })]
+  const sessions = (count) => [{ workspaceId: id, sessions: Array.from({ length: count }, (_, i) => `s${i}`) }]
+  const enough = aggregateRange(rows, 'D', '2020-01-01', '2020-01-01', sessions(4))
+  assert.deepEqual(enough.byWorkspace.map((item) => [item.workspaceId, item.tokens]), [[id, 10]])
+  const tooFew = aggregateRange(rows, 'D', '2020-01-01', '2020-01-01', sessions(3))
+  assert.deepEqual(tooFew.byWorkspace.map((item) => [item.workspaceId, item.tokens]), [['(workspace-unknown)', 10]])
 })
 
 test('工作区聚合把缺失/空归属归一为未知,并保留 turn-only 工作区', () => {

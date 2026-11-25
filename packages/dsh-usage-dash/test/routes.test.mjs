@@ -7,6 +7,7 @@ import { Readable } from 'node:stream'
 
 import { MAX_HOUR_SLOTS, MAX_HOUR_SPAN_DAYS, MAX_MINUTE_SPAN_DAYS, MAX_RANGE_SPAN_DAYS, registerUsageRoutes } from '../src/routes.js'
 import { DEFAULT_MINUTE_RETENTION_DAYS, hourKey, minuteKey } from '../src/store.js'
+import { syntheticWorkspaceId } from '../src/workspace-id.js'
 import { CLIENT_BODY } from './client-eval.mjs'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -495,6 +496,31 @@ test('workspaces 返回宿主工作区列表', async () => {
   const parsed = JSON.parse(res.body)
   assert.equal(res.statusCode, 200)
   assert.deepEqual(parsed.value.workspaces, workspaces)
+})
+
+test('workspaces 追加主会话过门槛的合成目录与已删除工作区', async () => {
+  const synthetic = syntheticWorkspaceId('/work/repo')
+  const small = syntheticWorkspaceId('/work/small')
+  const store = {
+    async sessionWorkspaceCounts() {
+      return new Map([[synthetic, 4], [small, 3], ['ws-deleted', 1]])
+    },
+    async workspaceIds() {
+      return [synthetic, small, 'ws-deleted', 'ws-a', '(workspace-unknown)']
+    },
+  }
+  const { routes } = mount({
+    store,
+    workspaces: () => [{ id: 'ws-a', title: 'Alpha', path: '/a', sessionCount: 1 }],
+  })
+  const res = await invoke(routes, PATH_WORKSPACES, { method: 'GET' })
+  const list = JSON.parse(res.body).value.workspaces
+  assert.deepEqual(list.map((item) => [item.id, item.synthetic === true, item.deleted === true]), [
+    ['ws-a', false, false],
+    [synthetic, true, false],
+    ['ws-deleted', false, true],
+  ])
+  assert.equal(list[1].title, 'repo')
 })
 
 test('status 回采集快照并附带回退点元信息与宿主时区', async () => {

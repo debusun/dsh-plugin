@@ -648,6 +648,37 @@ export class UsageStore {
     return matched
   }
 
+  // 主会话数按工作区分组:索引只写真实会话,合成目录门槛用它而不是 token 行数
+  async sessionWorkspaceCounts() {
+    await this.flushNow()
+    await this.ready
+    const counts = new Map()
+    if (this.sessionTable === undefined) return counts
+    for (const row of this.sessionTable.values()) {
+      const workspaceId = typeof row.workspaceId === 'string' && row.workspaceId !== '' ? row.workspaceId : WORKSPACE_UNKNOWN
+      const sessions = counts.get(workspaceId)
+      if (sessions === undefined) counts.set(workspaceId, new Set(row.sessions ?? []))
+      else for (const id of row.sessions ?? []) sessions.add(id)
+    }
+    return new Map([...counts].map(([workspaceId, sessions]) => [workspaceId, sessions.size]))
+  }
+
+  // 已删除工作区只剩历史行/索引,列表端点用它把缺失 id 一并交付
+  async workspaceIds() {
+    await this.flushNow()
+    await this.ready
+    const ids = new Set()
+    for (const row of this.requireTable().values()) {
+      if (typeof row.workspaceId === 'string' && row.workspaceId !== '') ids.add(row.workspaceId)
+    }
+    if (this.sessionTable !== undefined) {
+      for (const row of this.sessionTable.values()) {
+        if (typeof row.workspaceId === 'string' && row.workspaceId !== '') ids.add(row.workspaceId)
+      }
+    }
+    return [...ids]
+  }
+
   // 补扫判定:有历史用量但无会话索引 = 旧版本数据,需要一次性补建索引
   hasSessionRows() {
     return this.sessionTable !== undefined && this.sessionTable.size > 0

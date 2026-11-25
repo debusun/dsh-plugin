@@ -596,6 +596,18 @@ test('usageModelsOf 天视图用预折叠分组,时/分视图折叠点窗口模�
   assert.equal(usageModelsOf('minute', null, null), null)
 })
 
+test('workspaceUsageRows 已删除工作区显示删除标签而不是裸 id', () => {
+  const workspaces = [{ id: 'ws-gone', deleted: true }]
+  const rows = workspaceUsageRows(
+    [{ workspaceId: 'ws-gone', tokens: 10, requests: 1, turns: 0, activeDays: 1, models: [] }],
+    workspaces,
+    '',
+    '未知工作区',
+    '已删除工作区',
+  )
+  assert.equal(rows[0].name, '已删除工作区 ws-gone')
+})
+
 test('workspaceUsageRows 工作区并集、零用量过滤、模型拆分与未知归属', () => {
   // Given 注册表含零用量工作区、聚合含模型拆分/未知工作区 When 生成行 Then 去掉零用量、按 token 排序、名称与活跃天数取对
   const workspaces = [

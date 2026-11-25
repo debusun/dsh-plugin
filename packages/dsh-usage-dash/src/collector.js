@@ -8,16 +8,23 @@
 import { createArchiveReader } from './archive-reader.js'
 import { isDerivedSessionHeader } from './session-kind.js'
 import { WORKSPACE_UNKNOWN } from './store.js'
+import {
+  isSyntheticWorkspaceId,
+  syntheticWorkspaceId,
+  syntheticWorkspacePath,
+  syntheticWorkspaceTitle,
+  workspacePathKey,
+} from './workspace-id.js'
+
+export {
+  isSyntheticWorkspaceId,
+  syntheticWorkspaceId,
+  syntheticWorkspacePath,
+  syntheticWorkspaceTitle,
+  workspacePathKey,
+}
 
 const UNKNOWN_SESSION_ID = '(unknown-session)'
-
-// 工作区路径比较键:宿主注册表存 realpath 原文,会话头 cwd 可能来自不同盘符
-// 拼写;Windows 大小写和分隔符不敏感,其他平台保持原文避免误归并。
-export function workspacePathKey(value) {
-  if (typeof value !== 'string' || value === '') return ''
-  const normalized = value.replace(/\\/g, '/').replace(/\/+$/, '')
-  return process.platform === 'win32' ? normalized.toLowerCase() : normalized
-}
 
 // 路径归属:先精确命中;未命中时取最长的已注册父目录,避免 /repo 吞掉
 // /repo-other,也避免外层工作区抢走嵌套工作区。路径键已统一分隔符与大小写。
@@ -38,7 +45,8 @@ export function workspaceIdForPath(cwd, byPath) {
 
 // 工作区归属:优先用会话自身的注册结果;宿主不再枚举的旧档/孤儿会话虽不在
 // sessionIds 里,header.cwd 仍能命中已注册工作区本身或其父目录,按路径兜底。
-// 随后再沿 parentSession 回溯,覆盖子 agent 注册缓存尚未收录的首批用量。
+// 仍未命中的主会话按目录生成只读统计分组,派生会话不能单独建组,继续沿
+// parentSession 回溯,覆盖子 agent 注册缓存尚未收录的首批用量。
 export function workspaceIdForSession(sessionId, { bySession, headerOf, byPath } = {}) {
   const visited = new Set()
   let current = sessionId
@@ -49,7 +57,8 @@ export function workspaceIdForSession(sessionId, { bySession, headerOf, byPath }
     const header = headerOf?.(current)
     const byCwd = workspaceIdForPath(header?.cwd, byPath)
     if (byCwd !== undefined) return byCwd
-    if (!isDerivedSessionHeader(header) || header.parentSession === undefined) break
+    if (!isDerivedSessionHeader(header)) return syntheticWorkspaceId(header?.cwd) ?? WORKSPACE_UNKNOWN
+    if (header.parentSession === undefined) break
     current = header.parentSession
   }
   return WORKSPACE_UNKNOWN
