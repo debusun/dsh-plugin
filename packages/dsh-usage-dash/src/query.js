@@ -1,3 +1,4 @@
+import { WORKSPACE_UNKNOWN } from './store.js'
 import { costOf, matchPrice } from './pricing.js'
 
 export const MAX_SLOTS = 2000
@@ -95,6 +96,55 @@ const percentOf = (part, total) => (total === 0 ? 0 : (part / total) * PERCENT_S
 
 const rowTokens = (row) => row.inputTokens + row.outputTokens + row.cacheReadTokens + row.cacheWriteTokens
 
+// 工作区对比:按行所属工作区聚合,同时保留模型拆分供界面按模型筛选;
+// 零 token 的 turn 行仍计入请求/轮次,不把工作区用量误报成零
+function aggregateWorkspaces(rows) {
+  const groups = new Map()
+  for (const row of rows) {
+    const workspaceId = typeof row.workspaceId === 'string' && row.workspaceId !== '' ? row.workspaceId : WORKSPACE_UNKNOWN
+    const tokens = rowTokens(row)
+    let group = groups.get(workspaceId)
+    if (!group) {
+      group = {
+        workspaceId,
+        tokens: 0,
+        requests: 0,
+        turns: 0,
+        activeDays: new Set(),
+        models: new Map(),
+      }
+      groups.set(workspaceId, group)
+    }
+    group.tokens += tokens
+    group.requests += row.requests
+    group.turns += row.turns
+    if (tokens > 0) {
+      group.activeDays.add(row.bucket.slice(0, DAY_KEY_WIDTH))
+      let model = group.models.get(row.model)
+      if (!model) {
+        model = { model: row.model, tokens: 0, requests: 0, turns: 0, activeDays: new Set() }
+        group.models.set(row.model, model)
+      }
+      model.tokens += tokens
+      model.requests += row.requests
+      model.turns += row.turns
+      model.activeDays.add(row.bucket.slice(0, DAY_KEY_WIDTH))
+    }
+  }
+  return [...groups.values()]
+    .map((group) => ({
+      workspaceId: group.workspaceId,
+      tokens: group.tokens,
+      requests: group.requests,
+      turns: group.turns,
+      activeDays: group.activeDays.size,
+      models: [...group.models.values()]
+        .map(({ activeDays: days, ...model }) => ({ ...model, activeDays: days.size }))
+        .sort((a, b) => b.tokens - a.tokens),
+    }))
+    .sort((a, b) => b.tokens - a.tokens || b.requests - a.requests || a.workspaceId.localeCompare(b.workspaceId))
+}
+
 // 会话索引行并集:同会话跨桶只计一次;采集侧已过滤派生会话与超期桶,
 // 这里只做去重计数(畸形容错,观测数据不让聚合崩)
 function countSessions(sessionRows) {
@@ -121,10 +171,13 @@ export function aggregateRange(rows, g, from, to, sessionRows = []) {
   // 档级配对:桶串 → 速度对 {decodeTokens, durationMs} 与首字对 {ttftMs, ttftSteps},
   const slotSpeeds = new Map()
   const slotTtfts = new Map()
+  // 工作区对比与主聚合共用同一份可归属行,残行不会只进一边
+  const workspaceRows = []
   for (const row of rows) {
     const slot = slotByKey.get(row.bucket)
     // 桶串未落在枚举序列(如改粒度前的历史残行)不可归属,跳过防崩
     if (!slot) continue
+    workspaceRows.push(row)
     const tokens = rowTokens(row)
     addRowToSlot(slot, row, tokens)
     // 纯 timing 行(零 token 桶 + decode 配对)不参与归属,但仍进配对聚合
@@ -226,6 +279,7 @@ export function aggregateRange(rows, g, from, to, sessionRows = []) {
     daily,
     models,
     providers,
+    byWorkspace: aggregateWorkspaces(workspaceRows),
   }
   if (truncated) result.truncated = true
   return result

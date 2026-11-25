@@ -33,6 +33,8 @@ const COST_ENDPOINTS = {
 // 模型免折叠上限:条目不超它全展示,超过才折叠为 top(上限-1)+Other
 const GROUP_UNFOLDED_MAX = 5
 const OTHER_MODEL = '\u0000other'
+// 与服务端 store.js 的 WORKSPACE_UNKNOWN 同值;客户端不能 import 服务端模块
+const WORKSPACE_UNKNOWN_ID = '(workspace-unknown)'
 
 const PAD_WIDTH = 2
 const MS_PER_HOUR = 60 * 60 * 1000
@@ -790,6 +792,7 @@ const MESSAGES_ZH = {
   viewDay: '天',
   viewHour: '小时',
   viewMinute: '分钟',
+  viewWorkspace: '工作区',
   viewGroup: '统计粒度',
   'status.running': '回扫中 {done}/{total}',
   dataOutdated: '数据版本过旧，工作区统计可能不完整。点击重建后重新统计。',
@@ -886,6 +889,14 @@ const MESSAGES_ZH = {
   settingsSectionDesc: '官方弹窗补全与费用显示开关',
   workspaceFilter: '工作区',
   allWorkspaces: '全部工作区',
+  allModels: '全部模型',
+  modelFilter: '模型筛选',
+  workspaceUsage: '工作区用量',
+  workspaceUsageHint: '按当前时间范围比较各工作区的 token 用量',
+  workspaceUnknown: '未知工作区',
+  workspaceUsageEmpty: '当前范围内暂无工作区用量。',
+  workspaceUsageEmptyModel: '该模型在当前范围内暂无工作区用量。',
+  workspaceUsageTotal: '合计',
   displayGroup: '显示补全',
   displayGroupDesc: '官方用量与费用显示',
   recentGroup: '最近请求',
@@ -1129,6 +1140,7 @@ const MESSAGES_EN = {
   viewDay: 'Day',
   viewHour: 'Hour',
   viewMinute: 'Minute',
+  viewWorkspace: 'Workspaces',
   viewGroup: 'Granularity',
   'status.running': 'Rescanning {done}/{total}',
   dataOutdated: 'Usage data is outdated; workspace stats may be incomplete. Rebuild to rescan.',
@@ -1225,6 +1237,14 @@ const MESSAGES_EN = {
   settingsSectionDesc: 'Official dialog additions and cost display',
   workspaceFilter: 'Workspace',
   allWorkspaces: 'All workspaces',
+  allModels: 'All models',
+  modelFilter: 'Model filter',
+  workspaceUsage: 'Workspace usage',
+  workspaceUsageHint: 'Compare token usage by workspace in the selected range',
+  workspaceUnknown: 'Unknown workspace',
+  workspaceUsageEmpty: 'No workspace usage in this range.',
+  workspaceUsageEmptyModel: 'No workspace usage for this model in this range.',
+  workspaceUsageTotal: 'Total',
   displayGroup: 'Display additions',
   displayGroupDesc: 'Official usage and cost display',
   recentGroup: 'Recent requests',
@@ -1580,12 +1600,37 @@ function groupPointSlots(slots) {
 
 // 聚合展示区(统计卡/模型用量/统计截至)数据源:随视图联动——天视图用 range 聚合,时/分视图
 // (预设与自定义挡)用点端点聚合,字段同形;点数据未回为 null,调用方判空不渲染
-const cardsStatsOf = (view, stats, pointView) => (view === 'day' ? stats : pointView)
+const cardsStatsOf = (view, stats, pointView) => (view === 'day' || view === 'workspace' ? stats : pointView)
 
 // 模型用量列表:天视图用预折叠分组,时/分视图折叠点窗口模型(超上限折叠 top(上限-1)+other),点数据未回为 null
 const usageModelsOf = (view, grouped, pointView) => (
-  view === 'day' ? grouped?.models ?? null : pointView ? topWithOther(pointView.models) : null
+  view === 'workspace' ? null
+    : view === 'day' ? grouped?.models ?? null
+      : pointView ? topWithOther(pointView.models) : null
 )
+
+// 工作区对比行:工作区注册表与用量聚合取并集,零用量行不进表;模型筛选按拆分重算
+function workspaceUsageRows(byWorkspace, workspaces, model, unknownLabel) {
+  const usage = Array.isArray(byWorkspace) ? byWorkspace : []
+  const known = Array.isArray(workspaces) ? workspaces : []
+  const byId = new Map(usage.map((item) => [item.workspaceId, item]))
+  const names = new Map(known.map((item) => [item.id, item.title || item.path || item.id]))
+  const ids = new Set(known.map((item) => item.id))
+  for (const item of usage) ids.add(item.workspaceId)
+  return [...ids].map((id) => {
+    const item = byId.get(id)
+    const metric = model ? item?.models?.find((entry) => entry.model === model) : item
+    return {
+      id,
+      name: names.get(id) || (id === WORKSPACE_UNKNOWN_ID ? unknownLabel || id : id),
+      tokens: metric?.tokens ?? 0,
+      requests: metric?.requests ?? 0,
+      turns: metric?.turns ?? 0,
+      activeDays: metric?.activeDays ?? item?.activeDays ?? 0,
+    }
+  }).filter((row) => row.tokens > 0 || row.requests > 0 || row.turns > 0)
+    .sort((a, b) => b.tokens - a.tokens || b.requests - a.requests || a.name.localeCompare(b.name))
+}
 
 // 趋势图视口常量
 const CHART_HEIGHT = 220
@@ -3908,6 +3953,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
       { id: 'day', labelKey: 'viewDay' },
       { id: 'hour', labelKey: 'viewHour' },
       { id: 'minute', labelKey: 'viewMinute' },
+      { id: 'workspace', labelKey: 'viewWorkspace' },
     ]
 
     const requestPost = async (endpoint, body) => {
@@ -4122,6 +4168,17 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-donut-center{font-size:18px;font-weight:600;fill:var(--dsw-alias-label-primary)}
 .ud-donut-label{font-size:11px;fill:var(--dsw-alias-label-tertiary)}
 .ud-models{flex:1 1 260px;min-width:240px;display:flex;flex-direction:column}
+.ud-workspace-usage-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
+.ud-workspace-usage-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 10px;border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-sm);background:var(--ud-card);font-size:12px;color:var(--dsw-alias-label-secondary)}
+.ud-workspace-usage-total strong{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}
+.ud-workspace-usage-list{display:flex;flex-direction:column;gap:10px}
+.ud-workspace-usage-row{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ud-workspace-usage-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;min-width:0}
+.ud-workspace-usage-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary)}
+.ud-workspace-usage-value{flex:none;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
+.ud-workspace-usage-track{height:6px;border-radius:999px;background:var(--dsw-alias-bg-module-platform);overflow:hidden}
+.ud-workspace-usage-fill{display:block;height:100%;border-radius:inherit;background:var(--dsw-alias-state-business-primary)}
+.ud-workspace-usage-meta{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
 .ud-model-row{display:flex;align-items:center;gap:8px;min-height:46px;padding:1px 4px;border-bottom:1px solid var(--dsw-alias-border-l1)}
 .ud-model-row--expand{cursor:pointer}
 .ud-model-row--expand:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -5055,6 +5112,41 @@ ${HUD_CSS}
                 ].filter((section) => section.rows.length > 0),
               })
             : null))
+    }
+
+    // 工作区用量对比:统计卡之外的独立视图,按 token 量排序;
+    // 选中模型时用模型拆分重算,避免把总量误当成模型用量
+    function WorkspaceUsage({ byWorkspace = [], workspaces = [], model = '', t = defaultT }) {
+      const rows = workspaceUsageRows(byWorkspace, workspaces, model, t('workspaceUnknown'))
+      const total = rows.reduce((sum, row) => sum + row.tokens, 0)
+      const max = rows.reduce((value, row) => Math.max(value, row.tokens), 0)
+      return h('div', { className: 'ud-section ud-workspace-usage' },
+        h('div', { className: 'ud-section-head' },
+          h('span', { className: 'ud-section-title' }, t('workspaceUsage')),
+          h('span', { className: 'ud-workspace-usage-hint' }, model ? `${t('workspaceUsageHint')} · ${model}` : t('workspaceUsageHint'))),
+        rows.length > 0
+          ? h('div', { className: 'ud-workspace-usage-total' },
+              h('span', null, t('workspaceUsageTotal')),
+              h('strong', null, `${formatTokensCompact(total)} tok`))
+          : null,
+        rows.length === 0
+          ? h('div', { className: 'ud-empty' }, t(model ? 'workspaceUsageEmptyModel' : 'workspaceUsageEmpty'))
+          : h('div', { className: 'ud-workspace-usage-list' },
+              rows.map((row) => {
+                const percent = total > 0 ? (row.tokens / total) * PERCENT_SCALE : 0
+                const width = max > 0 ? (row.tokens / max) * PERCENT_SCALE : 0
+                return h('div', { className: 'ud-workspace-usage-row', key: row.id },
+                  h('div', { className: 'ud-workspace-usage-top' },
+                    h('span', { className: 'ud-workspace-usage-name', title: row.name }, row.name),
+                    h('span', {
+                      className: 'ud-workspace-usage-value',
+                      title: `${formatTokens(row.tokens)} tok`,
+                    }, `${formatTokensCompact(row.tokens)} (${formatPercent(percent)})`)),
+                  h('div', { className: 'ud-workspace-usage-track', role: 'presentation' },
+                    h('span', { className: 'ud-workspace-usage-fill', style: { width: `${width}%` } })),
+                  h('div', { className: 'ud-workspace-usage-meta' },
+                    `${t('requests')} ${formatTokens(row.requests)} · ${t('activeDays')} ${row.activeDays}`))
+              })))
     }
 
     // 规约形态开关:原生 checkbox 保语义并视觉隐藏,track/thumb 呈现选中态
@@ -6993,7 +7085,11 @@ ${HUD_CSS}
         armed ? t('restoreConfirm') : t('restore'))
     }
 
-    const viewLabel = (t, id) => (id === 'day' ? t('viewDay') : id === 'hour' ? t('viewHour') : t('viewMinute'))
+    const viewLabel = (t, id) => (
+      id === 'day' ? t('viewDay')
+        : id === 'hour' ? t('viewHour')
+          : id === 'minute' ? t('viewMinute') : t('viewWorkspace')
+    )
     const trendTitle = (t, id) => (id === 'day' ? t('dailyTrend') : id === 'hour' ? t('hourTrend') : t('minuteTrend'))
     const trendCostTitle = (t, id) => (id === 'day' ? t('dailyCostTrend') : id === 'hour' ? t('hourCostTrend') : t('minuteCostTrend'))
     const trendLimitedText = (t, id, count) => (id === 'day'
@@ -7008,6 +7104,7 @@ ${HUD_CSS}
       // 工作区筛选是整页数据范围,与图表口径开关分离
       const [workspaceId, setWorkspaceId] = useState('')
       const [workspaces, setWorkspaces] = useState([])
+      const [workspaceModel, setWorkspaceModel] = useState('')
       // 趋势图金额口径开关:会话态,与视图/挡位同为面板内临时状态
       const [costView, setCostView] = useState(false)
       // 跨组件悬浮联动:图例/模型行/扇区悬停时趋势图同模型柱段保持高亮,其余降透明
@@ -7088,11 +7185,14 @@ ${HUD_CSS}
         return () => { heatGenerationRef.current++ }
       }, [pricingTick, heatFetchTick, serverTimeZone, workspaceId])
 
+      // 工作区对比必须取全量工作区;不能把此前工具栏选中的 workspaceId 带进来
+      const workspaceView = view === 'workspace'
+
       const load = useCallback(async () => {
         const request = range === 'custom'
           ? { from: customFrom, to: customTo }
           : resolveDayRange(range, new Date(), serverTimeZone)
-        if (request && workspaceId) request.workspaceId = workspaceId
+        if (request && workspaceId && !workspaceView) request.workspaceId = workspaceId
         // 不完整范围:先取消在飞请求并复位 loading,否则首屏请求的 loading
         // 会被本次提前 return 继承,刷新按钮/骨架永久卡住
         if (!request || !request.from || !request.to) {
@@ -7114,16 +7214,24 @@ ${HUD_CSS}
         adoptValueTimeZone(result.value)
         setError('')
         setStats(result.value)
-      }, [range, customFrom, customTo, pricingTick, serverTimeZone, workspaceId])
+      }, [range, customFrom, customTo, pricingTick, serverTimeZone, workspaceId, workspaceView])
 
       useEffect(() => {
         load()
         return () => { generationRef.current++ }
       }, [load])
 
+      // 范围切换后旧模型可能已不存在,清掉筛选避免 select 显示与数据口径脱节
+      useEffect(() => {
+        if (!workspaceView || !workspaceModel || !stats?.models) return
+        if (!stats.models.some((item) => item.model === workspaceModel)) setWorkspaceModel('')
+      }, [stats, workspaceModel, workspaceView])
+
       const rawPreset = view === 'hour' ? hourPreset : view === 'minute' ? minutePreset : null
+      // 工作区对比固定按日范围;时/分视图才走点查询
+      const pointActive = view === 'hour' || view === 'minute'
       // 自定义挡输入不完整时 query 为 null:不发请求,已取数据留存缓存,输入恢复即按键命中
-      const activeQuery = view === 'day' ? null : resolvePointQuery(view, rawPreset, pointCustomFrom, pointCustomTo, new Date(), serverTimeZone)
+      const activeQuery = pointActive ? resolvePointQuery(view, rawPreset, pointCustomFrom, pointCustomTo, new Date(), serverTimeZone) : null
       const pointCacheKey = activeQuery && workspaceId ? `${activeQuery.key}|${workspaceId}` : activeQuery?.key
 
       useEffect(() => {
@@ -7302,10 +7410,11 @@ ${HUD_CSS}
       const pointView = activeQuery && pointStatsMatches(pointStats, view, pointCacheKey, activeQuery.timeZone) ? pointStats.value : null
       const pointGrouped = useMemo(() => (pointView ? groupPointSlots(pointView.daily) : null), [pointView])
 
-      const pointActive = view !== 'day'
-      const trendSource = pointActive
-        ? (pointGrouped ? { slots: pointGrouped.daily, models: pointGrouped.models, value: pointView } : null)
-        : (grouped ? { slots: grouped.daily, models: grouped.models, value: stats } : null)
+      const trendSource = workspaceView
+        ? null
+        : pointActive
+          ? (pointGrouped ? { slots: pointGrouped.daily, models: pointGrouped.models, value: pointView } : null)
+          : (grouped ? { slots: grouped.daily, models: grouped.models, value: stats } : null)
       // 聚合展示区(统计卡/模型用量/统计截至)与趋势图同源,随视图联动;点数据未回为 null 不渲染
       const cardsStats = cardsStatsOf(view, stats, pointView)
       const usageModels = usageModelsOf(view, grouped, pointView)
@@ -7322,7 +7431,7 @@ ${HUD_CSS}
       const loadingVisible = pointActive ? pointStatus === 'loading' && !pointView : loading && !stats
       const emptyVisible = !error && (pointActive ? pointView && isEmptyRange(pointView) : stats && isEmptyRange(stats))
 
-      const workspacePicker = workspaces.length > 0
+      const workspacePicker = !workspaceView && workspaces.length > 0
         ? h('label', { className: 'ud-workspace-picker', title: t('workspaceFilter') },
           h('span', { className: 'ud-workspace-icon' }, h(Icon, { paths: ICONS.workspace })),
           h('select', {
@@ -7340,6 +7449,25 @@ ${HUD_CSS}
             key: workspace.id, value: workspace.id,
             title: workspace.path || workspace.title,
           }, workspace.title || workspace.path || workspace.id))))
+        : null
+
+      // 工作区对比只按模型筛选;工作区本身是全量维度,不再叠加工作区过滤
+      const activeWorkspaceModel = workspaceModel && stats?.models?.some((item) => item.model === workspaceModel)
+        ? workspaceModel
+        : ''
+      const workspaceModelPicker = workspaceView && stats?.models?.length > 0
+        ? h('label', { className: 'ud-workspace-picker', title: t('modelFilter') },
+          h('span', { className: 'ud-workspace-icon' }, h(Icon, { paths: ICONS.model })),
+          h('select', {
+            className: 'ud-workspace-select',
+            'aria-label': t('modelFilter'),
+            value: activeWorkspaceModel,
+            onChange: (event) => setWorkspaceModel(event.target.value),
+          },
+          h('option', { value: '' }, t('allModels')),
+          stats.models.map((item) => h('option', {
+            key: item.model, value: item.model, title: item.model,
+          }, item.model))))
         : null
 
       return h('div', { className: 'ud-panel' },
@@ -7408,7 +7536,7 @@ ${HUD_CSS}
                         }))
                     : null)),
           h('div', { className: 'ud-toolbar-side' },
-            workspacePicker,
+            workspaceView ? workspaceModelPicker : workspacePicker,
             h(AnomalyChip, { open: detailsOpen, news: hasAnomalyNews(status), onToggle: () => setDetailsOpen((v) => !v), t }),
             h('button', {
               className: 'ud-btn ud-btn--text ud-icon-btn', 'aria-label': t('refresh'), title: t('refresh'),
@@ -7425,7 +7553,16 @@ ${HUD_CSS}
           : null,
         error ? h('div', { className: 'ud-error' }, error) : null,
         loadingVisible ? h('div', { className: 'ud-loading', role: 'status', 'aria-busy': 'true', 'aria-label': t('loading') }) : null,
-        cardsStats ? h(StatCards, { key: 'cards', stats: cardsStats, costCurrency, t }) : null,
+        !workspaceView && cardsStats ? h(StatCards, { key: 'cards', stats: cardsStats, costCurrency, t }) : null,
+        workspaceView && stats && !emptyVisible
+          ? h(WorkspaceUsage, {
+              key: 'workspace-usage',
+              byWorkspace: Array.isArray(stats?.byWorkspace) ? stats.byWorkspace : [],
+              workspaces,
+              model: activeWorkspaceModel,
+              t,
+            })
+          : null,
         // 空范围只留一处说明:图表与模型榜在无数据时不渲染,避免空坐标系与空环
         emptyVisible ? h('div', { className: 'ud-empty' }, t('empty')) : null,
         // 活跃热力图仅按天视图展示:热力图口径为日桶,时/分视图无对应语义
@@ -7454,7 +7591,7 @@ ${HUD_CSS}
             })
           : null,
         !emptyVisible && usageModels ? h(ModelUsage, { key: 'models', models: usageModels, colorFor, costCurrency, t, onHoverModel: setHoverModel }) : null,
-        cardsStats?.to ? h('div', { className: 'ud-foot' }, `${t('asOf')} ${slotLabelFor(view)(cardsStats.to)}`) : null,
+        !workspaceView && cardsStats?.to ? h('div', { className: 'ud-foot' }, `${t('asOf')} ${slotLabelFor(view)(cardsStats.to)}`) : null,
         h('div', { className: 'ud-settings-stack' },
           h(StatsLineOptions, { key: 'prefs', t }),
           h(PricingSection, { key: 'pricing', t, rules: pricingRules, observed: cardsStats?.models, timeZone: serverTimeZone }),

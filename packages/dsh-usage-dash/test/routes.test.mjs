@@ -455,6 +455,14 @@ test('range 合法请求回 UsageStatsRange 信封', async () => {
     { from: parsed.value.from, to: parsed.value.to, tokens: parsed.value.tokens, daily: parsed.value.daily.map((slot) => slot.day) },
     { from: '2026-02-01', to: '2026-02-02', tokens: 8, daily: ['2026-02-01', '2026-02-02'] },
   )
+  assert.deepEqual(parsed.value.byWorkspace, [{
+    workspaceId: '(workspace-unknown)',
+    tokens: 8,
+    requests: 1,
+    turns: 0,
+    activeDays: 2,
+    models: [{ model: 'deepseek-chat', tokens: 8, requests: 1, turns: 0, activeDays: 2 }],
+  }])
   assert.equal(store.calls.rangeRows, 1)
 })
 
