@@ -4221,16 +4221,15 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-actions>.ud-group{flex:none}
 .ud-pricing-platforms{display:grid;gap:12px;min-width:0}
 .ud-pricing-empty{border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card);min-width:0}
-.ud-pricing-rules{min-width:0;--ud-rule-blue:var(--dsw-alias-state-business-primary);--ud-rule-ink:color-mix(in srgb,var(--ud-rule-blue) 55%,var(--dsw-alias-label-primary-bluish));--ud-rule-gutter:calc(38px + var(--ud-rule-index));border-width:1px;border-color:color-mix(in srgb,var(--ud-rule-blue) 24%,var(--ud-card-border));background:color-mix(in srgb,var(--ud-rule-blue) 4%,var(--ud-card))}
-.ud-pricing-group{padding:0 12px 8px}
-.ud-pricing-group+.ud-pricing-group{border-top:.5px solid color-mix(in srgb,var(--ud-rule-blue) 14%,var(--ud-card-border))}
+.ud-pricing-rules{min-width:0;--ud-rule-blue:var(--dsw-alias-state-business-primary);--ud-rule-ink:color-mix(in srgb,var(--ud-rule-blue) 55%,var(--dsw-alias-label-primary-bluish));--ud-rule-gutter:calc(60px + var(--ud-rule-index));border-width:1px;border-color:color-mix(in srgb,var(--ud-rule-blue) 18%,var(--ud-card-border));background:var(--ud-card)}
+.ud-pricing-group{--ud-rule-mark:var(--ud-rule-blue);padding:0 12px 8px}
+.ud-pricing-group--wild{--ud-rule-mark:color-mix(in srgb,var(--ud-rule-blue) 65%,var(--ud-card))}
+.ud-pricing-group+.ud-pricing-group{border-top:.5px solid color-mix(in srgb,var(--ud-rule-blue) 10%,var(--ud-card-border))}
 .ud-pricing-group-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:14px 8px 4px}
-.ud-pricing-group-head .ud-fold-title{display:flex;align-items:center;gap:8px}
-.ud-pricing-group-dot{width:6px;height:6px;border-radius:50%;background:var(--ud-rule-blue);flex:none}
 .ud-pricing-group-head .ud-fold-summary{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .ud-pricing-rule,.ud-pricing-model{min-width:0}
 .ud-pricing-rule+.ud-pricing-rule,.ud-pricing-model+.ud-pricing-model{border-top:.5px solid var(--ud-card-border)}
-.ud-pricing-rules .ud-pricing-rule+.ud-pricing-rule{border-top-color:color-mix(in srgb,var(--ud-rule-blue) 8%,var(--ud-card-border))}
+.ud-pricing-rules .ud-pricing-rule+.ud-pricing-rule{border-top-color:color-mix(in srgb,var(--ud-rule-blue) 6%,var(--ud-card-border))}
 .ud-pricing-rule-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 4px;padding-inline-end:4px}
 .ud-pricing-rule--open .ud-pricing-rule-caret,.ud-pricing-rule--open .ud-pricing-rule-model{color:var(--ud-rule-ink)}
 .ud-pricing-row[aria-expanded=true]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent);border-radius:var(--dsw-radius-sm)}
@@ -4242,8 +4241,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-board .ud-pricing-rule-head:focus-visible{outline-offset:-2px}
 .ud-pricing-rule-no{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums}
 .ud-pricing-row-name{line-height:22px;min-width:0;overflow-wrap:anywhere}
-.ud-pricing-rule-head{display:grid;grid-template-columns:14px var(--ud-rule-index) minmax(0,1fr);align-content:center;align-items:baseline}
-.ud-pricing-rule-head .ud-pricing-rule-caret{align-self:center}
+.ud-pricing-rule-head{display:grid;grid-template-columns:14px 8px var(--ud-rule-index) minmax(0,1fr);column-gap:6px;align-content:center;align-items:baseline}
+.ud-pricing-rule-head .ud-pricing-rule-caret{align-self:start;margin-block-start:4px}
+.ud-pricing-rule-swatch{width:8px;height:8px;border-radius:3px;flex:none;align-self:start;margin-block-start:7px;background:var(--ud-rule-mark)}
 .ud-pricing-rule-head .ud-pricing-rule-no{white-space:nowrap}
 .ud-pricing-row-name>.ud-pricing-note,.ud-pricing-row-name>.ud-pricing-chip{margin-inline-start:8px}
 .ud-pricing-board .ud-model-name{white-space:normal;overflow-wrap:anywhere;line-height:22px}
@@ -4298,7 +4298,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-rule-detail{display:grid;gap:8px;padding:0 4px 12px calc(var(--ud-rule-gutter) - 12px)}
 .ud-pricing-rule-rate{display:grid;gap:8px;padding:12px;border:1px solid color-mix(in srgb,var(--ud-rule-blue) 16%,transparent);border-radius:var(--dsw-radius-sm);background:color-mix(in srgb,var(--ud-rule-blue) 4%,var(--ud-card))}
 .ud-pricing-rule-unit{display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;font-weight:600;color:var(--ud-rule-ink)}
-.ud-pricing-rule-unit::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ud-rule-blue);flex:none}
+.ud-pricing-rule-unit::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ud-rule-mark);flex:none}
 .ud-pricing-rule-meta{display:grid;gap:4px;padding-inline:12px}
 .ud-pricing-rule-meta ul{display:flex;flex-wrap:wrap;gap:4px 12px;list-style:none;margin:0;padding:0}
 .ud-pricing-rule-rate .ud-pricing-prices dd{font-size:20px;line-height:28px;font-weight:600}
@@ -6304,11 +6304,9 @@ ${HUD_CSS}
         labels.map((hasStar) => {
           const group = items.filter(({ rule }) => rule.model.includes(MODEL_WILDCARD) === hasStar)
           if (!group.length) return null
-          return h('section', { key: String(hasStar), className: 'ud-pricing-group' },
+          return h('section', { key: String(hasStar), className: cx('ud-pricing-group', hasStar && 'ud-pricing-group--wild') },
             h('div', { className: 'ud-pricing-group-head' },
-              h('h3', { className: 'ud-fold-title' },
-                h('span', { className: 'ud-pricing-group-dot', 'aria-hidden': 'true' }),
-                t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
+              h('h3', { className: 'ud-fold-title' }, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
               h('span', { className: 'ud-fold-summary' }, t('pricingRuleCount', { n: group.length }))),
             group.map(({ rule, index }) => {
               const stats = statsByKey.get(ruleStatsKey(rule)) ?? { billing: [], taken: [], conflict: false }
@@ -6328,6 +6326,7 @@ ${HUD_CSS}
                     'aria-controls': detailId, onClick: toggle,
                   },
                     h('span', { className: 'ud-pricing-rule-caret', 'aria-hidden': 'true' }, h(Icon, { paths: ICONS.chevron })),
+                    h('i', { className: 'ud-pricing-rule-swatch', 'aria-hidden': 'true' }),
                     h('span', { className: 'ud-pricing-rule-no' }, `#${index + 1}`),
                     h('span', { className: 'ud-model-id' },
                       h('span', { className: 'ud-pricing-row-name' },
