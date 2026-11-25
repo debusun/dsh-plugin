@@ -3948,8 +3948,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
       plus: ['M12 5v14', 'M5 12h14'],
       edit: ['m14 6 4 4', 'm5 15 10-10a2.8 2.8 0 0 1 4 4L9 19l-5 1 1-5Z'],
       rules: ['M8 6h12', 'M8 12h12', 'M8 18h12', 'M4 6h.01', 'M4 12h.01', 'M4 18h.01'],
-      target: ['M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z', 'M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z'],
-      wildcard: ['M12 4v16', 'm5 8 14 8', 'm19 8-14 8'],
     }
 
     function Icon({ paths }) {
@@ -4221,19 +4219,17 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-actions{margin-inline-start:auto}
 .ud-pricing-actions>.ud-group,.ud-pricing-weekdays{padding:2px;border-radius:var(--dsw-radius-sm)}
 .ud-pricing-actions>.ud-group{flex:none}
-.ud-pricing-rules,.ud-pricing-platforms{display:grid;gap:12px;min-width:0}
+.ud-pricing-platforms{display:grid;gap:12px;min-width:0}
 .ud-pricing-empty{border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card);min-width:0}
-.ud-pricing-rules{--ud-rule-blue:var(--dsw-alias-state-business-primary);--ud-rule-ink:color-mix(in srgb,var(--ud-rule-blue) 55%,var(--dsw-alias-label-primary-bluish));--ud-rule-wash:color-mix(in srgb,var(--ud-rule-blue) 10%,transparent)}
-.ud-pricing-group{padding:4px 12px}
-.ud-pricing-group-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:.5px solid var(--ud-card-border);background:linear-gradient(110deg,var(--ud-rule-wash),transparent 76%)}
-.ud-pricing-group-head .ud-fold-title{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-primary-bluish)}
-.ud-pricing-group-head .ud-fold-summary{color:var(--dsw-alias-label-secondary)}
-.ud-pricing-group-icon{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:var(--dsw-radius-sm);background:var(--ud-rule-wash);color:var(--ud-rule-ink)}
+.ud-pricing-rules{min-width:0;--ud-rule-blue:var(--dsw-alias-state-business-primary);--ud-rule-ink:color-mix(in srgb,var(--ud-rule-blue) 55%,var(--dsw-alias-label-primary-bluish));--ud-rule-gutter:calc(38px + var(--ud-rule-index))}
+.ud-pricing-group{padding:0 12px 8px}
+.ud-pricing-group+.ud-pricing-group{border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-group-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;padding:14px 8px 4px}
+.ud-pricing-group-head .ud-fold-summary{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .ud-pricing-rule,.ud-pricing-model{min-width:0}
 .ud-pricing-rule+.ud-pricing-rule,.ud-pricing-model+.ud-pricing-model{border-top:.5px solid var(--ud-card-border)}
-.ud-pricing-rule-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 8px;padding-inline-end:4px}
-.ud-pricing-rule--open{background:color-mix(in srgb,var(--ud-rule-blue) 6%,transparent);border-radius:var(--dsw-radius-sm);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ud-rule-blue) 24%,transparent)}
-.ud-pricing-rule--open .ud-pricing-rule-caret{color:var(--ud-rule-ink)}
+.ud-pricing-rule-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 4px;padding-inline-end:4px}
+.ud-pricing-rule--open .ud-pricing-rule-caret,.ud-pricing-rule--open .ud-pricing-rule-model{color:var(--ud-rule-ink)}
 .ud-pricing-row[aria-expanded=true]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent);border-radius:var(--dsw-radius-sm)}
 .ud-pricing-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 12px;text-align:center}
 .ud-pricing-empty-text{margin:0;font-size:14px;line-height:22px;color:var(--dsw-alias-label-secondary)}
@@ -4242,7 +4238,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-board .ud-pricing-rule-head:focus-visible{outline-offset:-2px}
 .ud-pricing-rule-no{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums}
 .ud-pricing-row-name{line-height:22px;min-width:0;overflow-wrap:anywhere}
-.ud-pricing-row-name>.ud-pricing-rule-no{margin-inline-end:8px}
+.ud-pricing-rule-head{display:grid;grid-template-columns:14px var(--ud-rule-index) minmax(0,1fr);align-content:center;align-items:baseline}
+.ud-pricing-rule-head .ud-pricing-rule-caret{align-self:center}
+.ud-pricing-rule-head .ud-pricing-rule-no{white-space:nowrap}
 .ud-pricing-row-name>.ud-pricing-note,.ud-pricing-row-name>.ud-pricing-chip{margin-inline-start:8px}
 .ud-pricing-board .ud-model-name{white-space:normal;overflow-wrap:anywhere;line-height:22px}
 .ud-pricing-board .ud-model-provider{white-space:normal;line-height:18px;color:var(--dsw-alias-label-secondary)}
@@ -4278,10 +4276,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-provider .ud-fold-title{overflow-wrap:anywhere}
 .ud-pricing-pages{justify-content:flex-end;padding-block-start:8px}
 .ud-pricing-chip{display:inline-flex;align-items:center;height:20px;font-weight:500;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm);padding:0 6px;font-size:11px;line-height:18px;white-space:nowrap}
-.ud-pricing-chip--button{height:24px;border:1px solid var(--ud-card-border);background:transparent;cursor:pointer;font:inherit;font-size:12px;line-height:18px}
-.ud-pricing-chip--button:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.ud-pricing-chip--billing{border-color:transparent;background:var(--ud-rule-wash);color:var(--ud-rule-ink);font-weight:600}
-.ud-pricing-chip--billing:not(:disabled):hover{background:color-mix(in srgb,var(--ud-rule-blue) 16%,transparent);color:var(--ud-rule-ink)}
+.ud-pricing-chip--button{min-height:28px;height:auto;border:0;background:transparent;cursor:pointer;font:inherit;font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;text-decoration:underline;text-decoration-color:var(--dsw-alias-border-l3);text-underline-offset:3px}
+.ud-pricing-chip--button:not(:disabled):hover{color:var(--ud-rule-ink);text-decoration-color:currentColor;background:color-mix(in srgb,var(--ud-rule-blue) 6%,transparent)}
+.ud-pricing-chip--billing{color:var(--dsw-alias-label-primary);font-weight:600}
 .ud-pricing-chip--button:disabled{opacity:.5;cursor:not-allowed}
 .ud-pricing-warn{color:var(--dsw-alias-state-warn-primary)}
 .ud-pricing-tree{border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-2);padding:8px 12px;margin:4px 0}
@@ -4290,11 +4287,12 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-tree-row+.ud-pricing-tree-row{border-top:.5px solid var(--dsw-alias-border-l2);padding-top:8px}
 .ud-pricing-tree-title{font-size:14px;overflow-wrap:anywhere}
 .ud-pricing-tree-row--winner .ud-pricing-tree-title{font-weight:600}
-.ud-pricing-rule-detail{display:grid;gap:6px;padding:4px 12px 12px}
-.ud-pricing-rule-unit{font-size:12px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary)}
-.ud-pricing-rule-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;padding-top:8px;border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-rule-detail{display:grid;gap:8px;padding:0 4px 12px calc(var(--ud-rule-gutter) - 12px)}
+.ud-pricing-rule-rate{display:grid;gap:8px;padding:12px;background:color-mix(in srgb,var(--ud-rule-blue) 7%,var(--ud-card));border-radius:var(--dsw-radius-sm)}
+.ud-pricing-rule-unit{font-size:12px;line-height:18px;font-weight:600;color:var(--ud-rule-ink)}
+.ud-pricing-rule-meta{display:grid;gap:4px;padding-inline:12px}
 .ud-pricing-rule-meta ul{display:flex;flex-wrap:wrap;gap:4px 12px;list-style:none;margin:0;padding:0}
-.ud-pricing-rule-detail .ud-pricing-prices dd{font-size:18px;line-height:24px;font-weight:600;color:var(--ud-rule-ink)}
+.ud-pricing-rule-rate .ud-pricing-prices dd{font-size:20px;line-height:28px;font-weight:600}
 .ud-pricing-prices dd{font-size:13px;font-weight:500;line-height:20px}
 .ud-pricing-dialog{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-shadow-lv3);font-size:14px;line-height:22px}
 .ud-pricing-dialog[open],.ud-pricing-dialog form{display:grid;gap:12px}
@@ -6267,8 +6265,9 @@ ${HUD_CSS}
         ? formatCost(stats.billing.reduce((sum, row) => sum + row.cost, 0), rule.currency) : TOOLTIP_MISSING
       const tokens = formatTokens(stats.billing.reduce((sum, row) => sum + (row.usage.tokens ?? 0), 0))
       return h('div', { className: 'ud-pricing-rule-detail' },
-        h('p', { className: 'ud-pricing-rule-unit' }, t('pricingUnit')),
-        h(PricingPriceReadout, { rule, t }),
+        h('div', { className: 'ud-pricing-rule-rate' },
+          h('p', { className: 'ud-pricing-rule-unit' }, t('pricingUnit')),
+          h(PricingPriceReadout, { rule, t })),
         h('div', { className: 'ud-pricing-rule-meta ud-pricing-note' },
           h('p', null, t('pricing.ruleEstimate', { cost, tokens })),
           takeover.size ? h('ul', null, [...takeover].map(([winner, n]) => {
@@ -6290,17 +6289,17 @@ ${HUD_CSS}
         'aria-haspopup': 'dialog',
         onClick: (event) => { event?.stopPropagation(); setDetail({ rule, kind, stats }) },
       }, t(`pricing.${kind}`, { n })) : null
-      return h('div', { className: 'ud-pricing-rules' },
+      return h(React.Fragment, null, h('div', {
+        className: 'ud-fold ud-pricing-rules', style: { '--ud-rule-index': `${String(rules.length).length + 1}ch` },
+      },
         labels.map((hasStar) => {
           const group = items.filter(({ rule }) => rule.model.includes(MODEL_WILDCARD) === hasStar)
           if (!group.length) return null
-          return h('section', { key: String(hasStar), className: 'ud-fold' },
+          return h('section', { key: String(hasStar), className: 'ud-pricing-group' },
             h('div', { className: 'ud-pricing-group-head' },
-              h('h3', { className: 'ud-fold-title' },
-                h('span', { className: 'ud-pricing-group-icon' }, h(Icon, { paths: hasStar ? ICONS.wildcard : ICONS.target })),
-                t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
+              h('h3', { className: 'ud-fold-title' }, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
               h('span', { className: 'ud-fold-summary' }, t('pricingRuleCount', { n: group.length }))),
-            h('div', { className: 'ud-pricing-group' }, group.map(({ rule, index }) => {
+            group.map(({ rule, index }) => {
               const stats = statsByKey.get(ruleStatsKey(rule)) ?? { billing: [], taken: [], conflict: false }
               const key = rule[DRAFT_SLOT]
               const detailId = `${listId}-${key}`
@@ -6318,9 +6317,9 @@ ${HUD_CSS}
                     'aria-controls': detailId, onClick: toggle,
                   },
                     h('span', { className: 'ud-pricing-rule-caret', 'aria-hidden': 'true' }, h(Icon, { paths: ICONS.chevron })),
+                    h('span', { className: 'ud-pricing-rule-no' }, `#${index + 1}`),
                     h('span', { className: 'ud-model-id' },
                       h('span', { className: 'ud-pricing-row-name' },
-                        h('span', { className: 'ud-pricing-rule-no' }, `#${index + 1}`),
                         h('span', { className: 'ud-model-name' }, h('span', { className: 'ud-pricing-rule-model' }, rule.model)),
                         isPricingFallback(rule) ? h('span', { className: 'ud-pricing-note' }, t('pricing.globalFallback')) : null,
                         stats.conflict ? h('span', { className: 'ud-pricing-chip ud-pricing-warn' }, t('pricing.conflict')) : null),
@@ -6334,8 +6333,8 @@ ${HUD_CSS}
                       title: t('pricing.editRule'), onClick: () => onEditRule(index),
                     }, h(Icon, { paths: ICONS.edit })))),
                 h('div', { id: detailId, hidden: !open }, open ? h(PricingRuleDetails, { rule, stats, rules, t }) : null))
-            })))
-        }),
+            }))
+        })),
         detail ? h(PricingRuleModels, { detail, analysis, rules, t, onClose: () => setDetail(null), onJump }) : null)
     }
 
