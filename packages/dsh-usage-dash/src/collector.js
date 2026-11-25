@@ -11,9 +11,18 @@ import { WORKSPACE_UNKNOWN } from './store.js'
 
 const UNKNOWN_SESSION_ID = '(unknown-session)'
 
-// 工作区归属:优先用会话自身的注册结果;子 agent 刚创建时注册缓存可能还没
-// 收录它,沿 parentSession 回溯到已注册的父会话,避免首批用量掉进未知分组。
-export function workspaceIdForSession(sessionId, { bySession, headerOf } = {}) {
+// 工作区路径比较键:宿主注册表存 realpath 原文,会话头 cwd 可能来自不同盘符
+// 拼写;Windows 大小写和分隔符不敏感,其他平台保持原文避免误归并。
+export function workspacePathKey(value) {
+  if (typeof value !== 'string' || value === '') return ''
+  const normalized = value.replace(/\\/g, '/').replace(/\/+$/, '')
+  return process.platform === 'win32' ? normalized.toLowerCase() : normalized
+}
+
+// 工作区归属:优先用会话自身的注册结果;宿主不再枚举的旧档/孤儿会话虽不在
+// sessionIds 里,header.cwd 仍能唯一命中已注册工作区,按路径兜底。随后再沿
+// parentSession 回溯,覆盖子 agent 注册缓存尚未收录的首批用量。
+export function workspaceIdForSession(sessionId, { bySession, headerOf, byPath } = {}) {
   const visited = new Set()
   let current = sessionId
   while (typeof current === 'string' && current !== '' && !visited.has(current)) {
@@ -21,6 +30,8 @@ export function workspaceIdForSession(sessionId, { bySession, headerOf } = {}) {
     const direct = bySession?.get?.(current)
     if (direct !== undefined) return direct
     const header = headerOf?.(current)
+    const byCwd = byPath?.get?.(workspacePathKey(header?.cwd))
+    if (byCwd !== undefined) return byCwd
     if (!isDerivedSessionHeader(header) || header.parentSession === undefined) break
     current = header.parentSession
   }

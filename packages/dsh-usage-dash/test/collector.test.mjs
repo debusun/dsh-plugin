@@ -5,7 +5,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { UsageCollector, workspaceIdForSession } from '../src/collector.js'
+import { UsageCollector, workspaceIdForSession, workspacePathKey } from '../src/collector.js'
 import { modelUsageProjectionDefinition } from '../src/session-models.js'
 
 const local = (y, mo, d, h = 0, mi = 0) => new Date(y, mo - 1, d, h, mi).getTime()
@@ -1433,6 +1433,18 @@ test('子会话注册缓存未命中:沿父会话归属工作区,普通分支不
   assert.equal(resolve('fork'), '(workspace-unknown)')
   assert.equal(resolve('orphan'), '(workspace-unknown)')
   assert.equal(resolve('cycle-a'), '(workspace-unknown)')
+})
+
+test('宿主未枚举的旧会话按 header.cwd 命中已注册工作区', () => {
+  const headers = new Map([
+    ['orphan', { id: 'orphan', cwd: '/work/repo/' }],
+    ['member', { id: 'member', cwd: '/work/other' }],
+  ])
+  const bySession = new Map([['member', 'ws-member']])
+  const byPath = new Map([[workspacePathKey('/work/repo'), 'ws-repo'], [workspacePathKey('/work/other'), 'ws-other']])
+  const resolve = (id) => workspaceIdForSession(id, { bySession, byPath, headerOf: (key) => headers.get(key) })
+  assert.equal(resolve('orphan'), 'ws-repo')
+  assert.equal(resolve('member'), 'ws-member', '注册成员优先于路径兜底')
 })
 
 test('回扫/重建子会话用量:readLog 的 header 沿 parentSession 归入父工作区', async () => {

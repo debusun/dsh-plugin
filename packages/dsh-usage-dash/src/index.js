@@ -5,7 +5,7 @@
 import schemastery from '@deepseek-ai/schemastery'
 
 import { BUDGET_ACTIONS, DEFAULT_WARN_RATIO, normalizeBudgetConfig } from './budget.js'
-import { UsageCollector, workspaceIdForSession } from './collector.js'
+import { UsageCollector, workspaceIdForSession, workspacePathKey } from './collector.js'
 import {
   CYCLE_DEFAULT,
   CYCLE_KINDS,
@@ -138,7 +138,7 @@ export function apply(ctx, config) {
   const collector = new UsageCollector(ctx, store)
   // 工作区归属按会话查宿主注册表;缓存窗口只吸收连续事件查询,成员变化后自动刷新
   const WORKSPACE_CACHE_MS = 5000
-  let workspaceCache = { at: 0, bySession: new Map(), list: [] }
+  let workspaceCache = { at: 0, bySession: new Map(), byPath: new Map(), list: [] }
   const workspaceSnapshot = () => {
     const now = Date.now()
     if (now - workspaceCache.at < WORKSPACE_CACHE_MS) return workspaceCache
@@ -157,18 +157,24 @@ export function apply(ctx, config) {
       sessionCount: (workspace.sessionIds ?? []).length,
     }))
     const bySession = new Map()
+    const byPath = new Map()
     for (const workspace of workspaces) {
+      byPath.set(workspacePathKey(workspace.path), workspace.id)
       for (const sessionId of workspace.sessionIds ?? []) bySession.set(sessionId, workspace.id)
     }
-    workspaceCache = { at: now, bySession, list }
+    workspaceCache = { at: now, bySession, byPath, list }
     return workspaceCache
   }
-  collector.workspaceOf = (sessionId, header, headers) => workspaceIdForSession(sessionId, {
-    bySession: workspaceSnapshot().bySession,
-    headerOf: (id) => id === sessionId && header !== undefined
-      ? header
-      : headers?.get(id) ?? ctx.sessions?.get?.(id)?.header,
-  })
+  collector.workspaceOf = (sessionId, header, headers) => {
+    const snapshot = workspaceSnapshot()
+    return workspaceIdForSession(sessionId, {
+      bySession: snapshot.bySession,
+      byPath: snapshot.byPath,
+      headerOf: (id) => id === sessionId && header !== undefined
+        ? header
+        : headers?.get(id) ?? ctx.sessions?.get?.(id)?.header,
+    })
+  }
   // 新会话(含子 agent)创建后立即失效缓存,首批用量不必等 5s 窗口
   ctx.on?.('session/created', () => { workspaceCache.at = 0 })
 
