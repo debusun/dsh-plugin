@@ -883,7 +883,6 @@ const MESSAGES_ZH = {
   requestCurrentTag: '当前',
   settingsSection: '显示与增强',
   settingsSectionDesc: '官方弹窗补全与费用显示开关',
-  sectionDesc: '按模型与时点估算费用，定价规则与快照试算都在这里',
   workspaceFilter: '工作区',
   allWorkspaces: '全部工作区',
   displayGroup: '显示补全',
@@ -1226,7 +1225,6 @@ const MESSAGES_EN = {
   requestCurrentTag: 'Current',
   settingsSection: 'Display & enhancements',
   settingsSectionDesc: 'Official dialog additions and cost display',
-  sectionDesc: 'Estimates cost per model and point in time; pricing rules and snapshot probes live here',
   workspaceFilter: 'Workspace',
   allWorkspaces: 'All workspaces',
   displayGroup: 'Display additions',
@@ -3996,9 +3994,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 --ud-heat-0:color-mix(in srgb, var(--dsw-alias-label-tertiary) 12%, transparent);--ud-heat-1:color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent);--ud-heat-2:color-mix(in srgb, var(--dsw-alias-state-business-primary) 36%, transparent);--ud-heat-3:color-mix(in srgb, var(--dsw-alias-state-business-primary) 54%, transparent);--ud-heat-4:color-mix(in srgb, var(--dsw-alias-state-business-primary) 74%, transparent);--ud-heat-5:var(--dsw-alias-state-business-primary);--ud-trend-line:var(--dsw-alias-state-business-primary);--ud-trend-speed:var(--dsw-alias-state-success-primary);--ud-trend-ttft:var(--dsw-alias-state-warn-primary);
 --ud-bg-overlay:var(--dsw-alias-bg-layer-2);--ud-border:var(--dsw-alias-border-l2);--ud-border-strong:var(--dsw-alias-border-l3);--ud-text:var(--dsw-alias-label-primary);--ud-text-sub:var(--dsw-alias-label-secondary);--ud-text-dim:var(--dsw-alias-label-tertiary);--ud-accent:var(--dsw-alias-state-business-primary);--ud-hover-bg:var(--dsw-alias-interactive-bg-hover);--ud-shadow-lv3:var(--dsw-shadow-lv3);--ud-radius-md:var(--dsw-radius-md);--ud-radius-sm:var(--dsw-radius-sm);--ud-card:var(--dsw-alias-bg-layer-1);--ud-card-border:var(--dsw-alias-border-l2)}
 .ud-section-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}
-.ud-page-head-copy{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
 .ud-section-page-title{margin:0;font-size:18px;line-height:26px;font-weight:600;color:var(--dsw-alias-label-primary)}
-.ud-section-page-desc{margin:0;font-size:13px;line-height:20px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ud-workspace-picker{display:inline-flex;align-items:center;gap:6px;flex:none;min-width:0;height:30px;padding:0 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary)}
 .ud-workspace-icon{display:inline-flex;flex:none}
 .ud-workspace-select{appearance:none;border:0;background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px;max-width:150px;min-width:0;padding:0 14px 0 0;cursor:pointer;text-overflow:ellipsis}
@@ -7294,9 +7290,7 @@ ${HUD_CSS}
 
       return h('div', { className: 'ud-panel' },
         h('header', { className: 'ud-section-page-head' },
-          h('div', { className: 'ud-page-head-copy' },
-            h('h2', { className: 'ud-section-page-title' }, t('nav')),
-            h('p', { className: 'ud-section-page-desc' }, t('sectionDesc'))),
+          h('h2', { className: 'ud-section-page-title' }, t('nav')),
           workspaces.length > 0
             ? h('label', { className: 'ud-workspace-picker', title: t('workspaceFilter') },
               h('span', { className: 'ud-workspace-icon' }, h(Icon, { paths: ICONS.workspace })),
