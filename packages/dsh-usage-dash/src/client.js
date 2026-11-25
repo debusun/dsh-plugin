@@ -956,6 +956,7 @@ const MESSAGES_ZH = {
   'pricing.cancel': '取消',
   'pricing.now': '此刻',
   'pricing.snapshot': '所选快照',
+  'pricing.estimateTime': '估算时点',
   'pricing.localSnapshot': '估算时点（{zone}）',
   'pricing.localZone': '本地时间',
   'pricing.providerSlash': '平台模式不能包含斜杠。请在型号字段输入带斜杠的型号。',
@@ -1297,6 +1298,7 @@ const MESSAGES_EN = {
   'pricing.cancel': 'Cancel',
   'pricing.now': 'Now',
   'pricing.snapshot': 'Selected snapshot',
+  'pricing.estimateTime': 'Estimate time',
   'pricing.localSnapshot': 'Estimate at ({zone})',
   'pricing.localZone': 'local time',
   'pricing.providerSlash': 'Provider patterns cannot contain a slash. Enter model names containing slashes in the model field.',
@@ -4198,14 +4200,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-toolbar,.ud-pricing-line,.ud-pricing-clock{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .ud-pricing-search{display:flex;gap:8px;align-items:end;min-width:0}
 .ud-pricing-search .ud-field{flex:1}
-.ud-pricing-search .ud-pricing-clock-toggle{margin-block-end:4px}
+.ud-pricing-search .ud-pricing-clock-group{margin-block-end:4px}
 .ud-pricing-search-input{position:relative;display:flex;align-items:center;min-width:0}
 .ud-pricing-search-input>svg{position:absolute;inset-inline-start:10px;color:var(--dsw-alias-label-secondary);pointer-events:none}
 .ud-pricing-search-input .ud-input{padding-inline-start:32px}
-.ud-pricing-board .ud-pricing-clock-toggle{position:relative;display:inline-grid;place-items:center;flex:none;width:28px;height:28px;padding:0;color:var(--dsw-alias-label-secondary)}
-.ud-pricing-clock-toggle svg{width:16px;height:16px}
-.ud-pricing-board .ud-pricing-clock-toggle:is([aria-expanded=true],.ud-pricing-clock-toggle--active){color:var(--dsw-alias-brand-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent)}
-.ud-pricing-clock-toggle--active::after{content:"";position:absolute;inset:4px 4px auto auto;width:5px;height:5px;border-radius:50%;background:var(--dsw-alias-state-business-primary)}
+.ud-pricing-clock-group{flex:none}
+.ud-pricing-toolbar>.ud-pricing-clock-group{margin-inline-start:auto}
+.ud-pricing-board .ud-pricing-clock-toggle{display:inline-flex;align-items:center;gap:6px;width:auto;height:28px;padding:0 10px;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px;border-radius:var(--dsw-radius-sm)}
+.ud-pricing-clock-toggle svg{width:15px;height:15px}
+.ud-pricing-board .ud-pricing-clock-toggle:is([aria-expanded=true],.ud-pricing-clock-toggle--active){color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}
+
 .ud-pricing-toolbar>.ud-group{border-radius:var(--dsw-radius-sm)}
 .ud-pricing-toolbar .ud-seg-item{height:30px}
 .ud-pricing-create{display:inline-flex;align-items:center;gap:6px}
@@ -6679,14 +6683,13 @@ ${HUD_CSS}
       const activeRule = activeRuleIndex >= 0 ? rules[activeRuleIndex] : null
       const analysis = useMemo(() => open ? pricingSnapshotOf(currentRules, observed, moment) : null, [open, currentRules, observed, moment.getTime()])
       const status = phase === PRICING_STATE_UNAVAILABLE ? 'pricingUnavailable' : phase !== PRICING_STATE_READY ? 'pricing.loading' : null
-      const controls = h('div', { className: 'ud-pricing-toolbar' },
-        h('div', { className: 'ud-group ud-pricing-tabs', role: 'tablist', 'aria-label': t('pricing.views') },
-          PRICING_TABS.map((entry, index) => h('button', {
-            key: entry.id, id: tabId(entry.id), type: 'button', role: 'tab', tabIndex: tab === entry.id ? 0 : -1,
-            'aria-controls': panelId(entry.id), 'aria-selected': tab === entry.id,
-            className: cx('ud-seg-item', tab === entry.id && 'ud-seg-item--on'),
-            onClick: () => chooseTab(entry.id), onKeyDown: (event) => onTabKey(event, index),
-          }, t(entry.labelKey)))))
+      const tabList = h('div', { className: 'ud-group ud-pricing-tabs', role: 'tablist', 'aria-label': t('pricing.views') },
+        PRICING_TABS.map((entry, index) => h('button', {
+          key: entry.id, id: tabId(entry.id), type: 'button', role: 'tab', tabIndex: tab === entry.id ? 0 : -1,
+          'aria-controls': panelId(entry.id), 'aria-selected': tab === entry.id,
+          className: cx('ud-seg-item', tab === entry.id && 'ud-seg-item--on'),
+          onClick: () => chooseTab(entry.id), onKeyDown: (event) => onTabKey(event, index),
+        }, t(entry.labelKey))))
       const clock = h('div', { className: 'ud-pricing-clock', id: `${boardId}-clock`, hidden: !clockOpen },
         h('label', { className: 'ud-field' },
           h('span', { className: 'ud-field-label' }, t('pricing.localSnapshot', { zone: timeZone || t('pricing.localZone') })),
@@ -6696,12 +6699,14 @@ ${HUD_CSS}
           })),
         h('button', { type: 'button', className: 'ud-btn', onClick: () => { setSnapshot(''); setNow(Date.now()) } }, t('pricing.backNow')))
       const clockLabel = snapshot ? `${t('pricing.snapshot')} · ${snapshot.replace('T', ' ')}` : t('pricing.localSnapshot', { zone: timeZone || t('pricing.localZone') })
-      const clockToggle = h('button', {
-        type: 'button', className: cx('ud-btn ud-pricing-clock-toggle', snapshot && 'ud-pricing-clock-toggle--active'),
-        'aria-label': clockLabel, title: clockLabel,
-        'aria-expanded': clockOpen, 'aria-controls': `${boardId}-clock`,
-        onClick: () => { if (!snapshot) setNow(Date.now()); setClockOpen(!clockOpen) },
-      }, h(Icon, { paths: ICONS.clock }))
+      const clockToggle = h('div', { className: 'ud-group ud-pricing-clock-group' },
+        h('button', {
+          type: 'button', className: cx('ud-seg-item ud-pricing-clock-toggle', snapshot && 'ud-pricing-clock-toggle--active'),
+          'aria-label': clockLabel, title: clockLabel,
+          'aria-expanded': clockOpen, 'aria-controls': `${boardId}-clock`,
+          onClick: () => { if (!snapshot) setNow(Date.now()); setClockOpen(!clockOpen) },
+        }, h(Icon, { paths: ICONS.clock }), h('span', null, t('pricing.estimateTime'))))
+      const controls = h('div', { className: 'ud-pricing-toolbar' }, tabList, tab === 'rules' && !ruleEditor ? clockToggle : null)
       const currencyPicker = h('div', { className: 'ud-group', role: 'group', 'aria-label': t('pricingCurrency') },
         CURRENCIES.map((symbol) => h('button', {
           key: symbol, type: 'button',
@@ -6733,8 +6738,7 @@ ${HUD_CSS}
             h(Icon, { paths: ICONS.plus }), t('pricing.createRule')),
           h('div', { className: 'ud-pricing-actions' },
             saved ? h('span', { className: 'ud-pref-desc', role: 'status' }, t('saved')) : null,
-            currencyPicker, saveButton, clockToggle)),
-        clock,
+            currencyPicker, saveButton)),
         saveError || errors.size ? h('div', { className: 'ud-error', role: 'alert' }, saveError || t(errors.get('fallback') ?? 'pricing.validationSummary')) : null,
         h(PricingRules, {
           analysis, rules: rules ?? [], t, onEditRule: openEditRule,
@@ -6799,6 +6803,7 @@ ${HUD_CSS}
         hudRefresh({ force: true }).catch(() => {})
       }
       return h('div', { className: 'ud-pricing-board', ref: boardRef }, controls,
+        tab === 'rules' && !ruleEditor ? clock : null,
         PRICING_TABS.map((entry) => h('div', {
           key: entry.id, id: panelId(entry.id), role: 'tabpanel', 'aria-labelledby': tabId(entry.id), tabIndex: 0, hidden: tab !== entry.id,
         }, tab !== entry.id ? null : status ? h('div', { className: 'ud-empty' },
