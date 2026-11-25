@@ -80,10 +80,13 @@ function makeWebServer() {
   }
 }
 
-function makeStore({ rows = [], sessionRows = [], fail, failSessionRows, backupAvailable = false } = {}) {
+function makeStore({ rows = [], sessionRows = [], fail, failSessionRows, backupAvailable = false, legacyRows = 0 } = {}) {
   const calls = { rangeRows: 0, sessionRangeRows: [] }
   return {
     calls,
+    dataStatus() {
+      return { legacyRows }
+    },
     backupInfo() {
       return { available: backupAvailable }
     },
@@ -496,7 +499,18 @@ test('status 回采集快照并附带回退点元信息与宿主时区', async (
   assert.equal(res.statusCode, 200)
   assert.equal(parsed.ok, true)
   // 面板用该 IANA 时区生成日/时/分范围,与宿主桶键日历对齐
-  assert.deepEqual(parsed.value, { ...collector.status(), backup: { available: false }, timeZone: 'UTC' })
+  assert.deepEqual(parsed.value, {
+    ...collector.status(), backup: { available: false }, legacyRows: 0, needsRebuild: false, timeZone: 'UTC',
+  })
+})
+
+test('status 发现旧版行键时提示重建', async () => {
+  const { routes } = mount({ store: makeStore({ legacyRows: 3 }) })
+  const res = await invokeJson(routes, PATH_STATUS)
+  const parsed = JSON.parse(res.body)
+  assert.equal(res.statusCode, 200)
+  assert.equal(parsed.value.legacyRows, 3)
+  assert.equal(parsed.value.needsRebuild, true)
 })
 
 test('minutes 超出保留窗口标注 coveredFrom/coveredTo', async () => {

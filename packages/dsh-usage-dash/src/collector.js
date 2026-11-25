@@ -10,6 +10,23 @@ import { isDerivedSessionHeader } from './session-kind.js'
 import { WORKSPACE_UNKNOWN } from './store.js'
 
 const UNKNOWN_SESSION_ID = '(unknown-session)'
+
+// 工作区归属:优先用会话自身的注册结果;子 agent 刚创建时注册缓存可能还没
+// 收录它,沿 parentSession 回溯到已注册的父会话,避免首批用量掉进未知分组。
+export function workspaceIdForSession(sessionId, { bySession, headerOf } = {}) {
+  const visited = new Set()
+  let current = sessionId
+  while (typeof current === 'string' && current !== '' && !visited.has(current)) {
+    visited.add(current)
+    const direct = bySession?.get?.(current)
+    if (direct !== undefined) return direct
+    const header = headerOf?.(current)
+    if (!isDerivedSessionHeader(header) || header.parentSession === undefined) break
+    current = header.parentSession
+  }
+  return WORKSPACE_UNKNOWN
+}
+
 const SEQ_UNKNOWN = -1
 const DEFAULT_BACKFILL_CONCURRENCY = 4
 const MARK_BATCH = 32
@@ -409,7 +426,7 @@ export class UsageCollector {
       if (!sample) return
       // turn 标记落合成行不归因;其余样本先取本调用 source,再取会话路由
       if (!sample.turn) sample.model = fromSource ?? this.routeFor(sid)
-      const workspaceId = this.workspaceOf(sid)
+      const workspaceId = this.workspaceOf(sid, session?.header)
       void this.store.record(sample, { live: true, workspaceId }).catch((error) => {
         this.pushLog('record', error?.message ?? String(error))
       })
@@ -555,6 +572,9 @@ export class UsageCollector {
         this.#state.error = error instanceof Error ? error.message : String(error)
         throw error
       })
+      const headersById = new Map(
+        headers.filter((item) => item.header !== undefined).map((item) => [item.id, item.header]),
+      )
       const seen = await this.store.seenSessions()
       const liveSeq = await this.store.liveSequences()
       const targets = headers.filter((header) => !seen.has(header.id))
@@ -599,10 +619,11 @@ export class UsageCollector {
           }
           // 每会话全新 fold:(turn,step) 键按会话隔离,并发重放不共享
           const fold = new UsageFold()
-          const workspaceId = this.workspaceOf(header.id)
           let route = ''
           try {
             const inspection = await reader.readLog(header.id, signal)
+            // 列表透出的 header 覆盖历史多级子会话,readLog.header 优先校正当前会话
+            const workspaceId = this.workspaceOf(header.id, inspection.header ?? headersById.get(header.id), headersById)
             // 回扫已成功读完第一个会话:半写孤儿行可以安全清理,随后按本轮结果重建
             if (!orphanResetDone) {
               await this.store.clearOrphanRows()
@@ -670,6 +691,9 @@ export class UsageCollector {
     this.#state.error = undefined
     try {
       const headers = await reader.list(signal)
+      const headersById = new Map(
+        headers.filter((item) => item.header !== undefined).map((item) => [item.id, item.header]),
+      )
       // 宿主已标注派生的会话直接跳过,不必读日志
       const targets = headers.filter((header) => header.derived !== true)
       this.#state.total = headers.length
@@ -688,7 +712,7 @@ export class UsageCollector {
             if (inspection.derived !== true) {
               const fold = new UsageFold()
               const inheritedCut = inspection.inheritedEventCount
-              const workspaceId = this.workspaceOf(target.id)
+              const workspaceId = this.workspaceOf(target.id, inspection.header ?? headersById.get(target.id), headersById)
               let sinceYield = 0
               for (const event of inspection.events) {
                 if (signal?.aborted) return

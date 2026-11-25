@@ -792,6 +792,7 @@ const MESSAGES_ZH = {
   viewMinute: '分钟',
   viewGroup: '统计粒度',
   'status.running': '回扫中 {done}/{total}',
+  dataOutdated: '数据版本过旧，工作区统计可能不完整。点击重建后重新统计。',
   rebuild: '重建',
   rebuildConfirm: '确认重建',
   restore: '回退数据',
@@ -964,7 +965,6 @@ const MESSAGES_ZH = {
   'pricing.loading': '正在加载定价规则…',
   'pricing.backNow': '回到此刻',
   'pricing.search': '搜索平台或型号',
-  'pricing.searchPlaceholder': '也可输入完整的 平台/型号 试算',
   'pricing.noObserved': '当前统计范围内暂无已观察到的模型。',
   'pricing.noSearchResults': '暂无匹配的已观察模型。',
   'pricing.previousModels': '上一页型号',
@@ -1131,6 +1131,7 @@ const MESSAGES_EN = {
   viewMinute: 'Minute',
   viewGroup: 'Granularity',
   'status.running': 'Rescanning {done}/{total}',
+  dataOutdated: 'Usage data is outdated; workspace stats may be incomplete. Rebuild to rescan.',
   rebuild: 'Rebuild',
   rebuildConfirm: 'Confirm rebuild',
   restore: 'Restore data',
@@ -1303,7 +1304,6 @@ const MESSAGES_EN = {
   'pricing.loading': 'Loading pricing rules…',
   'pricing.backNow': 'Back to now',
   'pricing.search': 'Find a provider or model',
-  'pricing.searchPlaceholder': 'Enter a full provider/model to test its price',
   'pricing.noObserved': 'No models were observed in this usage range.',
   'pricing.noSearchResults': 'No observed models match the search.',
   'pricing.previousModels': 'Previous models',
@@ -4028,6 +4028,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-status-track{display:inline-block;width:120px;height:2px;border-radius:999px;background:var(--dsw-alias-border-l1);overflow:hidden}
 .ud-status-fill{display:block;height:100%;background:var(--dsw-alias-state-business-primary)}
 .ud-status-err{color:var(--dsw-alias-state-error-primary)}
+.ud-rebuild-prompt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 24%,var(--dsw-alias-border-l2));border-radius:var(--dsw-radius-sm);background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,transparent);color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px}
+.ud-rebuild-prompt-text{flex:1 1 auto;min-width:0}
+.ud-rebuild-prompt .ud-btn--danger-text{height:28px;padding:0 8px;margin-inline-start:auto}
 .ud-detail{width:100%;margin-top:4px;display:flex;flex-direction:column;gap:6px}
 .ud-detail-foot{display:flex;justify-content:flex-end;align-items:center}
 .ud-log{width:100%;border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-sm);background:var(--ud-card);padding:8px 10px;display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;font-size:11px;line-height:1.5}
@@ -6170,10 +6173,11 @@ ${HUD_CSS}
         ? h(PricingTree, { key: row.model, row, rules, t }) : null)
       return h('div', { className: 'ud-pricing-stack' },
         h('div', { className: 'ud-pricing-search' },
-          h('label', { className: 'ud-field' }, h('span', { className: 'ud-field-label' }, t('pricing.search')),
+          h('div', { className: 'ud-field' },
             h('span', { className: 'ud-pricing-search-input' }, h(Icon, { paths: ICONS.search }),
               h('input', {
-                type: 'search', className: 'ud-input', value: query, list: listId, placeholder: t('pricing.searchPlaceholder'),
+                type: 'search', className: 'ud-input', value: query, list: listId, placeholder: t('pricing.search'),
+                'aria-label': t('pricing.search'),
                 onChange: (event) => {
                   const value = event.target.value
                   if (value.trim() !== probeKey) {
@@ -6916,7 +6920,7 @@ ${HUD_CSS}
           h(HintText, { className: 'ud-log-detail', text: entry.detail }, entry.detail))))
     }
 
-    function RebuildButton({ machineRef, busy, onError, t = defaultT }) {
+    function RebuildButton({ machineRef, busy, onError, t = defaultT, danger = false }) {
       const [armed, setArmed] = useState(false)
       const armedTimerRef = useRef(null)
 
@@ -6939,8 +6943,20 @@ ${HUD_CSS}
         machineRef.current?.restart()
       }
 
-      return h('button', { className: 'ud-btn ud-btn--text', disabled: busy, onClick: rebuild },
-        armed ? t('rebuildConfirm') : t('rebuild'))
+      return h('button', {
+        className: cx('ud-btn ud-btn--text', danger && 'ud-btn--danger-text'),
+        disabled: busy, onClick: rebuild,
+      }, armed ? t('rebuildConfirm') : t('rebuild'))
+    }
+
+    // 旧版行键没有工作区段:工作区筛选会漏掉历史，明确提示并复用重建确认
+    function RebuildPrompt({ status, machineRef, onError, t = defaultT }) {
+      if (!status?.needsRebuild) return null
+      return h('div', { className: 'ud-rebuild-prompt', role: 'alert' },
+        h('span', { className: 'ud-rebuild-prompt-text' }, t('dataOutdated')),
+        h(RebuildButton, {
+          machineRef, busy: status.running === true, onError, t, danger: true,
+        }))
     }
 
     // 回退按钮:仅当存在重建快照(status.backup.available)时可点;
@@ -7399,6 +7415,7 @@ ${HUD_CSS}
               disabled: busy, onClick: refresh,
             }, h('span', { className: 'ud-icon', dangerouslySetInnerHTML: { __html: REFRESH_ICON_SVG } })))),
         h(StatusRow, { status, t }),
+        h(RebuildPrompt, { status, machineRef: statusMachineRef, onError: setError, t }),
         detailsOpen
           ? h('div', { className: 'ud-detail' },
               h(AnomalyLog, { status, t }),

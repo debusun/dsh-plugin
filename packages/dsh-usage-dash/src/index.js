@@ -5,7 +5,7 @@
 import schemastery from '@deepseek-ai/schemastery'
 
 import { BUDGET_ACTIONS, DEFAULT_WARN_RATIO, normalizeBudgetConfig } from './budget.js'
-import { UsageCollector } from './collector.js'
+import { UsageCollector, workspaceIdForSession } from './collector.js'
 import {
   CYCLE_DEFAULT,
   CYCLE_KINDS,
@@ -143,7 +143,13 @@ export function apply(ctx, config) {
     const now = Date.now()
     if (now - workspaceCache.at < WORKSPACE_CACHE_MS) return workspaceCache
     const registry = ctx.get?.('workspaceRegistry')
-    const workspaces = typeof registry?.list === 'function' ? registry.list() : []
+    let workspaces = []
+    try {
+      workspaces = typeof registry?.list === 'function' ? registry.list() : []
+    } catch {
+      // 注册表未就绪/条目损坏时保留上一份 good cache,不让事件监听器一起失败
+      return workspaceCache
+    }
     const list = workspaces.map((workspace) => ({
       id: workspace.id,
       title: workspace.title,
@@ -157,7 +163,14 @@ export function apply(ctx, config) {
     workspaceCache = { at: now, bySession, list }
     return workspaceCache
   }
-  collector.workspaceOf = (sessionId) => workspaceSnapshot().bySession.get(sessionId) ?? WORKSPACE_UNKNOWN
+  collector.workspaceOf = (sessionId, header, headers) => workspaceIdForSession(sessionId, {
+    bySession: workspaceSnapshot().bySession,
+    headerOf: (id) => id === sessionId && header !== undefined
+      ? header
+      : headers?.get(id) ?? ctx.sessions?.get?.(id)?.header,
+  })
+  // 新会话(含子 agent)创建后立即失效缓存,首批用量不必等 5s 窗口
+  ctx.on?.('session/created', () => { workspaceCache.at = 0 })
 
   // 定价能力门面:规则表落 usage_pricing 域,读同步取域内快照,写串行自增
   // revision;域打开失败时定价读写均返回不可用

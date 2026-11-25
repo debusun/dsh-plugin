@@ -338,11 +338,15 @@ const workspacesHandler = (deps) => async (req, res) => {
 }
 
 const statusHandler = (deps) => async (req, res) => {
+  await deps.store.readyPromise?.()
+  const data = deps.store.dataStatus?.() ?? {}
   writeJson(res, {
     ok: true,
     value: {
       ...deps.collector.status(),
       backup: deps.store.backupInfo(),
+      legacyRows: data.legacyRows ?? 0,
+      needsRebuild: (data.legacyRows ?? 0) > 0,
       // 桶键按宿主本地日历聚合;面板必须用同一 IANA 时区生成 from/to,
       // 否则宿主 UTC、浏览器 +8 时日/小时/热力图日界整体平移
       timeZone: deps.timeZone,
