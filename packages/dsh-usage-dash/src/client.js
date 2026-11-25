@@ -4221,13 +4221,16 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-actions>.ud-group{flex:none}
 .ud-pricing-platforms{display:grid;gap:12px;min-width:0}
 .ud-pricing-empty{border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-md);background:var(--ud-card);min-width:0}
-.ud-pricing-rules{min-width:0;--ud-rule-blue:var(--dsw-alias-state-business-primary);--ud-rule-ink:color-mix(in srgb,var(--ud-rule-blue) 55%,var(--dsw-alias-label-primary-bluish));--ud-rule-gutter:calc(38px + var(--ud-rule-index))}
+.ud-pricing-rules{min-width:0;--ud-rule-blue:var(--dsw-alias-state-business-primary);--ud-rule-ink:color-mix(in srgb,var(--ud-rule-blue) 55%,var(--dsw-alias-label-primary-bluish));--ud-rule-gutter:calc(38px + var(--ud-rule-index));border-width:1px;border-color:color-mix(in srgb,var(--ud-rule-blue) 24%,var(--ud-card-border));background:color-mix(in srgb,var(--ud-rule-blue) 4%,var(--ud-card))}
 .ud-pricing-group{padding:0 12px 8px}
-.ud-pricing-group+.ud-pricing-group{border-top:.5px solid var(--ud-card-border)}
-.ud-pricing-group-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;padding:14px 8px 4px}
+.ud-pricing-group+.ud-pricing-group{border-top:.5px solid color-mix(in srgb,var(--ud-rule-blue) 14%,var(--ud-card-border))}
+.ud-pricing-group-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:14px 8px 4px}
+.ud-pricing-group-head .ud-fold-title{display:flex;align-items:center;gap:8px}
+.ud-pricing-group-dot{width:6px;height:6px;border-radius:50%;background:var(--ud-rule-blue);flex:none}
 .ud-pricing-group-head .ud-fold-summary{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
 .ud-pricing-rule,.ud-pricing-model{min-width:0}
 .ud-pricing-rule+.ud-pricing-rule,.ud-pricing-model+.ud-pricing-model{border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-rules .ud-pricing-rule+.ud-pricing-rule{border-top-color:color-mix(in srgb,var(--ud-rule-blue) 8%,var(--ud-card-border))}
 .ud-pricing-rule-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 4px;padding-inline-end:4px}
 .ud-pricing-rule--open .ud-pricing-rule-caret,.ud-pricing-rule--open .ud-pricing-rule-model{color:var(--ud-rule-ink)}
 .ud-pricing-row[aria-expanded=true]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent);border-radius:var(--dsw-radius-sm)}
@@ -4235,6 +4238,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-empty-text{margin:0;font-size:14px;line-height:22px;color:var(--dsw-alias-label-secondary)}
 .ud-pricing-rule-head,.ud-pricing-row{width:100%;min-width:0;min-height:46px;padding:6px 8px;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;border-radius:var(--dsw-radius-sm)}
 .ud-pricing-rule-head:hover,.ud-pricing-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.ud-pricing-rules .ud-pricing-rule-head:hover{background:color-mix(in srgb,var(--ud-rule-blue) 5%,transparent)}
 .ud-pricing-board .ud-pricing-rule-head:focus-visible{outline-offset:-2px}
 .ud-pricing-rule-no{color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums}
 .ud-pricing-row-name{line-height:22px;min-width:0;overflow-wrap:anywhere}
@@ -4276,9 +4280,13 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-provider .ud-fold-title{overflow-wrap:anywhere}
 .ud-pricing-pages{justify-content:flex-end;padding-block-start:8px}
 .ud-pricing-chip{display:inline-flex;align-items:center;height:20px;font-weight:500;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm);padding:0 6px;font-size:11px;line-height:18px;white-space:nowrap}
-.ud-pricing-chip--button{min-height:28px;height:auto;border:0;background:transparent;cursor:pointer;font:inherit;font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;text-decoration:underline;text-decoration-color:var(--dsw-alias-border-l3);text-underline-offset:3px}
-.ud-pricing-chip--button:not(:disabled):hover{color:var(--ud-rule-ink);text-decoration-color:currentColor;background:color-mix(in srgb,var(--ud-rule-blue) 6%,transparent)}
+.ud-pricing-chip--button{display:inline-flex;align-items:center;gap:4px;min-height:28px;height:auto;padding:0 4px;border:1px solid transparent;border-radius:var(--dsw-radius-sm);background:transparent;cursor:pointer;font:inherit;font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ud-pricing-chip-dot{width:5px;height:5px;border-radius:50%;flex:none;background:var(--dsw-alias-label-tertiary)}
 .ud-pricing-chip--billing{color:var(--dsw-alias-label-primary);font-weight:600}
+.ud-pricing-chip--billing .ud-pricing-chip-dot{background:var(--ud-rule-blue)}
+.ud-pricing-chip--taken .ud-pricing-chip-dot{background:var(--dsw-alias-state-warn-primary)}
+.ud-pricing-chip--button:not(:disabled):hover{background:color-mix(in srgb,var(--ud-rule-blue) 8%,transparent);border-color:color-mix(in srgb,var(--ud-rule-blue) 30%,transparent);color:var(--dsw-alias-label-primary)}
+.ud-pricing-chip--taken:not(:disabled):hover{background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 8%,transparent);border-color:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 30%,transparent)}
 .ud-pricing-chip--button:disabled{opacity:.5;cursor:not-allowed}
 .ud-pricing-warn{color:var(--dsw-alias-state-warn-primary)}
 .ud-pricing-tree{border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-2);padding:8px 12px;margin:4px 0}
@@ -4288,8 +4296,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-tree-title{font-size:14px;overflow-wrap:anywhere}
 .ud-pricing-tree-row--winner .ud-pricing-tree-title{font-weight:600}
 .ud-pricing-rule-detail{display:grid;gap:8px;padding:0 4px 12px calc(var(--ud-rule-gutter) - 12px)}
-.ud-pricing-rule-rate{display:grid;gap:8px;padding:12px;background:color-mix(in srgb,var(--ud-rule-blue) 7%,var(--ud-card));border-radius:var(--dsw-radius-sm)}
-.ud-pricing-rule-unit{font-size:12px;line-height:18px;font-weight:600;color:var(--ud-rule-ink)}
+.ud-pricing-rule-rate{display:grid;gap:8px;padding:12px;border:1px solid color-mix(in srgb,var(--ud-rule-blue) 16%,transparent);border-radius:var(--dsw-radius-sm);background:color-mix(in srgb,var(--ud-rule-blue) 4%,var(--ud-card))}
+.ud-pricing-rule-unit{display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;font-weight:600;color:var(--ud-rule-ink)}
+.ud-pricing-rule-unit::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ud-rule-blue);flex:none}
 .ud-pricing-rule-meta{display:grid;gap:4px;padding-inline:12px}
 .ud-pricing-rule-meta ul{display:flex;flex-wrap:wrap;gap:4px 12px;list-style:none;margin:0;padding:0}
 .ud-pricing-rule-rate .ud-pricing-prices dd{font-size:20px;line-height:28px;font-weight:600}
@@ -6285,10 +6294,10 @@ ${HUD_CSS}
         .sort((a, b) => a.segments[0].localeCompare(b.segments[0], 'en') || a.segments[1].localeCompare(b.segments[1], 'en') || a.index - b.index), [rules])
       const statsByKey = useMemo(() => new Map([...analysis.ruleStats].map(([rule, stats]) => [ruleStatsKey(rule), stats])), [analysis])
       const badge = (rule, kind, n, stats) => n > 0 ? h('button', {
-        type: 'button', className: cx('ud-pricing-chip ud-pricing-chip--button', kind === 'billing' && 'ud-pricing-chip--billing'),
+        type: 'button', className: cx('ud-pricing-chip ud-pricing-chip--button', `ud-pricing-chip--${kind}`),
         'aria-haspopup': 'dialog',
         onClick: (event) => { event?.stopPropagation(); setDetail({ rule, kind, stats }) },
-      }, t(`pricing.${kind}`, { n })) : null
+      }, h('span', { className: 'ud-pricing-chip-dot', 'aria-hidden': 'true' }), t(`pricing.${kind}`, { n })) : null
       return h(React.Fragment, null, h('div', {
         className: 'ud-fold ud-pricing-rules', style: { '--ud-rule-index': `${String(rules.length).length + 1}ch` },
       },
@@ -6297,7 +6306,9 @@ ${HUD_CSS}
           if (!group.length) return null
           return h('section', { key: String(hasStar), className: 'ud-pricing-group' },
             h('div', { className: 'ud-pricing-group-head' },
-              h('h3', { className: 'ud-fold-title' }, t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
+              h('h3', { className: 'ud-fold-title' },
+                h('span', { className: 'ud-pricing-group-dot', 'aria-hidden': 'true' }),
+                t(hasStar ? 'pricing.withStar' : 'pricing.withoutStar')),
               h('span', { className: 'ud-fold-summary' }, t('pricingRuleCount', { n: group.length }))),
             group.map(({ rule, index }) => {
               const stats = statsByKey.get(ruleStatsKey(rule)) ?? { billing: [], taken: [], conflict: false }
