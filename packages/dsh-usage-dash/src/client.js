@@ -890,7 +890,6 @@ const MESSAGES_ZH = {
   allWorkspaces: '全部工作区',
   allModels: '全部模型',
   modelFilter: '模型筛选',
-  workspaceNav: '工作区用量',
   workspaceUsage: '工作区用量',
   workspaceUsageHint: '按当前时间范围比较各工作区的 token 用量',
   workspaceUnknown: '未知工作区',
@@ -1238,7 +1237,6 @@ const MESSAGES_EN = {
   allWorkspaces: 'All workspaces',
   allModels: 'All models',
   modelFilter: 'Model filter',
-  workspaceNav: 'Workspace usage',
   workspaceUsage: 'Workspace usage',
   workspaceUsageHint: 'Compare token usage by workspace in the selected range',
   workspaceUnknown: 'Unknown workspace',
@@ -4165,6 +4163,11 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-donut-center{font-size:18px;font-weight:600;fill:var(--dsw-alias-label-primary)}
 .ud-donut-label{font-size:11px;fill:var(--dsw-alias-label-tertiary)}
 .ud-models{flex:1 1 260px;min-width:240px;display:flex;flex-direction:column}
+.ud-workspace-embedded{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:.5px solid var(--dsw-alias-border-l1)}
+.ud-workspace-embedded .ud-section{gap:8px}
+.ud-workspace-embedded .ud-section-title{font-size:13px;line-height:20px}
+.ud-workspace-embedded .ud-workspace-usage-list{gap:8px}
+.ud-workspace-embedded .ud-workspace-usage-total{padding:6px 8px}
 .ud-workspace-usage-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px}
 .ud-workspace-usage-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 10px;border:.5px solid var(--ud-card-border);border-radius:var(--dsw-radius-sm);background:var(--ud-card);font-size:12px;color:var(--dsw-alias-label-secondary)}
 .ud-workspace-usage-total strong{color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}
@@ -5146,8 +5149,8 @@ ${HUD_CSS}
               })))
     }
 
-    // 独立工作区用量页:只按日范围比较工作区,不混入天/小时/分钟视图与工作区筛选
-    function WorkspaceUsagePanel({ t = defaultT }) {
+    // 工作区用量块:嵌入「用量摘要」,只按日范围比较工作区,不混入统计视图与工作区筛选
+    function WorkspaceUsagePanel({ t = defaultT, embedded = false }) {
       const [range, setRange] = useState(DEFAULT_RANGE)
       const [customFrom, setCustomFrom] = useState('')
       const [customTo, setCustomTo] = useState('')
@@ -5220,7 +5223,7 @@ ${HUD_CSS}
           }, item.model))))
         : null
 
-      return h('div', { className: 'ud-panel ud-workspace-panel' },
+      return h('div', { className: cx(embedded ? 'ud-workspace-embedded' : 'ud-panel ud-workspace-panel') },
         h('div', { className: 'ud-toolbar' },
           h('div', { className: 'ud-toolbar-main' },
             h('div', { className: 'ud-group', role: 'group', 'aria-label': t('range') },
@@ -8866,6 +8869,7 @@ ${HUD_CSS}
           card('month', t('hudMonth'), hudCostText(summary.cycle?.cost ?? 0, currency), metaOf(summary.cycle ?? {}), hudCostExact(summary.cycle?.cost ?? 0, currency), t('hudTipMonthDesc')),
           card('rate', t('hudRate'), rateText, Number.isFinite(summary.tokensPerHour) ? `${formatTokensCompact(summary.tokensPerHour)}/h` : null, rateExact, t('hudTipRateDesc')),
           card('cache', t('hudCacheHit'), cacheText, null, null, t('hudTipCacheDesc'))),
+        h(WorkspaceUsagePanel, { key: 'workspace-usage', t, embedded: true }),
         currency === null ? h('p', { className: 'ud-hud-note', key: 'noPricing' }, t('hudNoPricing')) : null,
         budgets.length === 0 || features.guard !== true ? null : h('section', { className: 'ud-hud-section', key: 'budget' },
           h('div', { className: 'ud-hud-section-head' },
@@ -8982,12 +8986,7 @@ ${HUD_CSS}
             { name: 'settings.section', id: 'usage-dash', order: 45, label: () => ctx.locale.bind(LOCALE_NS)('nav'), locale: LOCALE_NS },
             UsageDashPanel,
           ))
-        // 工作区对比是独立设置页,不占用用量统计的天/小时/分钟视图
-        ctx.slots.inject('settings.section', () =>
-          ctx.slots.register(
-            { name: 'settings.section', id: 'usage-workspaces', order: 46, label: () => ctx.locale.bind(LOCALE_NS)('workspaceNav'), locale: LOCALE_NS },
-            WorkspaceUsagePanel,
-          ))
+
         // 两段式注册官方 dock 槽增强条目:宿主缺该插槽时注册抛错即禁用本功能;
         // order 2 排官方 activity(0)/usage(1) 之后,append 在官方数据后面
         try {
