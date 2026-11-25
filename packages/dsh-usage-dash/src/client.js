@@ -792,7 +792,6 @@ const MESSAGES_ZH = {
   viewDay: '天',
   viewHour: '小时',
   viewMinute: '分钟',
-  viewWorkspace: '工作区',
   viewGroup: '统计粒度',
   'status.running': '回扫中 {done}/{total}',
   dataOutdated: '数据版本过旧，工作区统计可能不完整。点击重建后重新统计。',
@@ -891,6 +890,7 @@ const MESSAGES_ZH = {
   allWorkspaces: '全部工作区',
   allModels: '全部模型',
   modelFilter: '模型筛选',
+  workspaceNav: '工作区用量',
   workspaceUsage: '工作区用量',
   workspaceUsageHint: '按当前时间范围比较各工作区的 token 用量',
   workspaceUnknown: '未知工作区',
@@ -1140,7 +1140,6 @@ const MESSAGES_EN = {
   viewDay: 'Day',
   viewHour: 'Hour',
   viewMinute: 'Minute',
-  viewWorkspace: 'Workspaces',
   viewGroup: 'Granularity',
   'status.running': 'Rescanning {done}/{total}',
   dataOutdated: 'Usage data is outdated; workspace stats may be incomplete. Rebuild to rescan.',
@@ -1239,6 +1238,7 @@ const MESSAGES_EN = {
   allWorkspaces: 'All workspaces',
   allModels: 'All models',
   modelFilter: 'Model filter',
+  workspaceNav: 'Workspace usage',
   workspaceUsage: 'Workspace usage',
   workspaceUsageHint: 'Compare token usage by workspace in the selected range',
   workspaceUnknown: 'Unknown workspace',
@@ -1600,13 +1600,11 @@ function groupPointSlots(slots) {
 
 // 聚合展示区(统计卡/模型用量/统计截至)数据源:随视图联动——天视图用 range 聚合,时/分视图
 // (预设与自定义挡)用点端点聚合,字段同形;点数据未回为 null,调用方判空不渲染
-const cardsStatsOf = (view, stats, pointView) => (view === 'day' || view === 'workspace' ? stats : pointView)
+const cardsStatsOf = (view, stats, pointView) => (view === 'day' ? stats : pointView)
 
 // 模型用量列表:天视图用预折叠分组,时/分视图折叠点窗口模型(超上限折叠 top(上限-1)+other),点数据未回为 null
 const usageModelsOf = (view, grouped, pointView) => (
-  view === 'workspace' ? null
-    : view === 'day' ? grouped?.models ?? null
-      : pointView ? topWithOther(pointView.models) : null
+  view === 'day' ? grouped?.models ?? null : pointView ? topWithOther(pointView.models) : null
 )
 
 // 工作区对比行:工作区注册表与用量聚合取并集,零用量行不进表;模型筛选按拆分重算
@@ -3953,7 +3951,6 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
       { id: 'day', labelKey: 'viewDay' },
       { id: 'hour', labelKey: 'viewHour' },
       { id: 'minute', labelKey: 'viewMinute' },
-      { id: 'workspace', labelKey: 'viewWorkspace' },
     ]
 
     const requestPost = async (endpoint, body) => {
@@ -5147,6 +5144,128 @@ ${HUD_CSS}
                   h('div', { className: 'ud-workspace-usage-meta' },
                     `${t('requests')} ${formatTokens(row.requests)} · ${t('activeDays')} ${row.activeDays}`))
               })))
+    }
+
+    // 独立工作区用量页:只按日范围比较工作区,不混入天/小时/分钟视图与工作区筛选
+    function WorkspaceUsagePanel({ t = defaultT }) {
+      const [range, setRange] = useState(DEFAULT_RANGE)
+      const [customFrom, setCustomFrom] = useState('')
+      const [customTo, setCustomTo] = useState('')
+      const [stats, setStats] = useState(null)
+      const [workspaces, setWorkspaces] = useState([])
+      const [model, setModel] = useState('')
+      const [loading, setLoading] = useState(true)
+      const [error, setError] = useState('')
+      const [refreshTick, setRefreshTick] = useState(0)
+      const [timeZone, setTimeZone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || null)
+      const generationRef = useRef(0)
+
+      useEffect(() => {
+        let alive = true
+        requestGet(ENDPOINTS.workspaces).then((result) => {
+          if (!alive || !result.ok) return
+          setWorkspaces(Array.isArray(result.value?.workspaces) ? result.value.workspaces : [])
+        })
+        return () => { alive = false }
+      }, [])
+
+      const request = range === 'custom'
+        ? { from: customFrom, to: customTo }
+        : resolveDayRange(range, new Date(), timeZone)
+      const ready = !!request?.from && !!request?.to
+
+      useEffect(() => {
+        if (!ready) {
+          generationRef.current += 1
+          setLoading(false)
+          setStats(null)
+          return undefined
+        }
+        const generation = ++generationRef.current
+        setLoading(true)
+        setError('')
+        requestPost(ENDPOINTS.range, request).then((result) => {
+          if (generationRef.current !== generation) return
+          setLoading(false)
+          if (!result.ok) {
+            setError(result.message)
+            return
+          }
+          setStats(result.value)
+          if (result.value?.timeZone && result.value.timeZone !== timeZone) setTimeZone(result.value.timeZone)
+        })
+        return () => { generationRef.current++ }
+      }, [range, customFrom, customTo, refreshTick, timeZone, ready])
+
+      useEffect(() => {
+        if (!model || !stats?.models) return
+        if (!stats.models.some((item) => item.model === model)) setModel('')
+      }, [stats, model])
+
+      const models = stats?.models ?? []
+      const activeModel = model && models.some((item) => item.model === model) ? model : ''
+      const emptyVisible = !!stats && isEmptyRange(stats)
+      const modelPicker = models.length > 0
+        ? h('label', { className: 'ud-workspace-picker', title: t('modelFilter') },
+          h('span', { className: 'ud-workspace-icon' }, h(Icon, { paths: ICONS.model })),
+          h('select', {
+            className: 'ud-workspace-select',
+            'aria-label': t('modelFilter'),
+            value: activeModel,
+            onChange: (event) => setModel(event.target.value),
+          },
+          h('option', { value: '' }, t('allModels')),
+          models.map((item) => h('option', {
+            key: item.model, value: item.model, title: item.model,
+          }, item.model))))
+        : null
+
+      return h('div', { className: 'ud-panel ud-workspace-panel' },
+        h('div', { className: 'ud-toolbar' },
+          h('div', { className: 'ud-toolbar-main' },
+            h('div', { className: 'ud-group', role: 'group', 'aria-label': t('range') },
+              DAY_PRESETS.map((id) => h('button', {
+                key: id,
+                className: cx('ud-seg-item', range === id && 'ud-seg-item--on'),
+                'aria-pressed': range === id,
+                onClick: () => setRange(id),
+              }, t(`rangePreset.${id}`))),
+              h('button', {
+                className: cx('ud-seg-item', range === 'custom' && 'ud-seg-item--on'),
+                'aria-pressed': range === 'custom',
+                onClick: () => setRange('custom'),
+              }, t('rangeCustom'))),
+            range === 'custom'
+              ? h('div', { className: 'ud-custom-range' },
+                  h('input', {
+                    type: 'date', className: 'ud-date-input', 'aria-label': t('from'),
+                    value: customFrom, max: customTo || undefined,
+                    onChange: (event) => setCustomFrom(event.target.value),
+                  }),
+                  h('span', { className: 'ud-custom-sep' }, '–'),
+                  h('input', {
+                    type: 'date', className: 'ud-date-input', 'aria-label': t('to'),
+                    value: customTo, min: customFrom || undefined, max: dayBucket(new Date(), timeZone),
+                    onChange: (event) => setCustomTo(event.target.value),
+                  }))
+              : null),
+          h('div', { className: 'ud-toolbar-side' },
+            modelPicker,
+            h('button', {
+              className: 'ud-btn ud-btn--text ud-icon-btn', 'aria-label': t('refresh'), title: t('refresh'),
+              disabled: loading, onClick: () => setRefreshTick((tick) => tick + 1),
+            }, h('span', { className: 'ud-icon', dangerouslySetInnerHTML: { __html: REFRESH_ICON_SVG } })))),
+        error ? h('div', { className: 'ud-error' }, error) : null,
+        loading && !stats ? h('div', { className: 'ud-loading', role: 'status', 'aria-busy': 'true', 'aria-label': t('loading') }) : null,
+        !emptyVisible && stats
+          ? h(WorkspaceUsage, {
+              byWorkspace: Array.isArray(stats.byWorkspace) ? stats.byWorkspace : [],
+              workspaces,
+              model: activeModel,
+              t,
+            })
+          : null,
+        emptyVisible ? h('div', { className: 'ud-empty' }, t('workspaceUsageEmpty')) : null)
     }
 
     // 规约形态开关:原生 checkbox 保语义并视觉隐藏,track/thumb 呈现选中态
@@ -7085,11 +7204,7 @@ ${HUD_CSS}
         armed ? t('restoreConfirm') : t('restore'))
     }
 
-    const viewLabel = (t, id) => (
-      id === 'day' ? t('viewDay')
-        : id === 'hour' ? t('viewHour')
-          : id === 'minute' ? t('viewMinute') : t('viewWorkspace')
-    )
+    const viewLabel = (t, id) => (id === 'day' ? t('viewDay') : id === 'hour' ? t('viewHour') : t('viewMinute'))
     const trendTitle = (t, id) => (id === 'day' ? t('dailyTrend') : id === 'hour' ? t('hourTrend') : t('minuteTrend'))
     const trendCostTitle = (t, id) => (id === 'day' ? t('dailyCostTrend') : id === 'hour' ? t('hourCostTrend') : t('minuteCostTrend'))
     const trendLimitedText = (t, id, count) => (id === 'day'
@@ -7104,7 +7219,6 @@ ${HUD_CSS}
       // 工作区筛选是整页数据范围,与图表口径开关分离
       const [workspaceId, setWorkspaceId] = useState('')
       const [workspaces, setWorkspaces] = useState([])
-      const [workspaceModel, setWorkspaceModel] = useState('')
       // 趋势图金额口径开关:会话态,与视图/挡位同为面板内临时状态
       const [costView, setCostView] = useState(false)
       // 跨组件悬浮联动:图例/模型行/扇区悬停时趋势图同模型柱段保持高亮,其余降透明
@@ -7185,14 +7299,11 @@ ${HUD_CSS}
         return () => { heatGenerationRef.current++ }
       }, [pricingTick, heatFetchTick, serverTimeZone, workspaceId])
 
-      // 工作区对比必须取全量工作区;不能把此前工具栏选中的 workspaceId 带进来
-      const workspaceView = view === 'workspace'
-
       const load = useCallback(async () => {
         const request = range === 'custom'
           ? { from: customFrom, to: customTo }
           : resolveDayRange(range, new Date(), serverTimeZone)
-        if (request && workspaceId && !workspaceView) request.workspaceId = workspaceId
+        if (request && workspaceId) request.workspaceId = workspaceId
         // 不完整范围:先取消在飞请求并复位 loading,否则首屏请求的 loading
         // 会被本次提前 return 继承,刷新按钮/骨架永久卡住
         if (!request || !request.from || !request.to) {
@@ -7214,22 +7325,16 @@ ${HUD_CSS}
         adoptValueTimeZone(result.value)
         setError('')
         setStats(result.value)
-      }, [range, customFrom, customTo, pricingTick, serverTimeZone, workspaceId, workspaceView])
+      }, [range, customFrom, customTo, pricingTick, serverTimeZone, workspaceId])
 
       useEffect(() => {
         load()
         return () => { generationRef.current++ }
       }, [load])
 
-      // 范围切换后旧模型可能已不存在,清掉筛选避免 select 显示与数据口径脱节
-      useEffect(() => {
-        if (!workspaceView || !workspaceModel || !stats?.models) return
-        if (!stats.models.some((item) => item.model === workspaceModel)) setWorkspaceModel('')
-      }, [stats, workspaceModel, workspaceView])
-
       const rawPreset = view === 'hour' ? hourPreset : view === 'minute' ? minutePreset : null
       // 工作区对比固定按日范围;时/分视图才走点查询
-      const pointActive = view === 'hour' || view === 'minute'
+      const pointActive = view !== 'day'
       // 自定义挡输入不完整时 query 为 null:不发请求,已取数据留存缓存,输入恢复即按键命中
       const activeQuery = pointActive ? resolvePointQuery(view, rawPreset, pointCustomFrom, pointCustomTo, new Date(), serverTimeZone) : null
       const pointCacheKey = activeQuery && workspaceId ? `${activeQuery.key}|${workspaceId}` : activeQuery?.key
@@ -7410,11 +7515,9 @@ ${HUD_CSS}
       const pointView = activeQuery && pointStatsMatches(pointStats, view, pointCacheKey, activeQuery.timeZone) ? pointStats.value : null
       const pointGrouped = useMemo(() => (pointView ? groupPointSlots(pointView.daily) : null), [pointView])
 
-      const trendSource = workspaceView
-        ? null
-        : pointActive
-          ? (pointGrouped ? { slots: pointGrouped.daily, models: pointGrouped.models, value: pointView } : null)
-          : (grouped ? { slots: grouped.daily, models: grouped.models, value: stats } : null)
+      const trendSource = pointActive
+        ? (pointGrouped ? { slots: pointGrouped.daily, models: pointGrouped.models, value: pointView } : null)
+        : (grouped ? { slots: grouped.daily, models: grouped.models, value: stats } : null)
       // 聚合展示区(统计卡/模型用量/统计截至)与趋势图同源,随视图联动;点数据未回为 null 不渲染
       const cardsStats = cardsStatsOf(view, stats, pointView)
       const usageModels = usageModelsOf(view, grouped, pointView)
@@ -7431,7 +7534,7 @@ ${HUD_CSS}
       const loadingVisible = pointActive ? pointStatus === 'loading' && !pointView : loading && !stats
       const emptyVisible = !error && (pointActive ? pointView && isEmptyRange(pointView) : stats && isEmptyRange(stats))
 
-      const workspacePicker = !workspaceView && workspaces.length > 0
+      const workspacePicker = workspaces.length > 0
         ? h('label', { className: 'ud-workspace-picker', title: t('workspaceFilter') },
           h('span', { className: 'ud-workspace-icon' }, h(Icon, { paths: ICONS.workspace })),
           h('select', {
@@ -7449,25 +7552,6 @@ ${HUD_CSS}
             key: workspace.id, value: workspace.id,
             title: workspace.path || workspace.title,
           }, workspace.title || workspace.path || workspace.id))))
-        : null
-
-      // 工作区对比只按模型筛选;工作区本身是全量维度,不再叠加工作区过滤
-      const activeWorkspaceModel = workspaceModel && stats?.models?.some((item) => item.model === workspaceModel)
-        ? workspaceModel
-        : ''
-      const workspaceModelPicker = workspaceView && stats?.models?.length > 0
-        ? h('label', { className: 'ud-workspace-picker', title: t('modelFilter') },
-          h('span', { className: 'ud-workspace-icon' }, h(Icon, { paths: ICONS.model })),
-          h('select', {
-            className: 'ud-workspace-select',
-            'aria-label': t('modelFilter'),
-            value: activeWorkspaceModel,
-            onChange: (event) => setWorkspaceModel(event.target.value),
-          },
-          h('option', { value: '' }, t('allModels')),
-          stats.models.map((item) => h('option', {
-            key: item.model, value: item.model, title: item.model,
-          }, item.model))))
         : null
 
       return h('div', { className: 'ud-panel' },
@@ -7536,7 +7620,7 @@ ${HUD_CSS}
                         }))
                     : null)),
           h('div', { className: 'ud-toolbar-side' },
-            workspaceView ? workspaceModelPicker : workspacePicker,
+            workspacePicker,
             h(AnomalyChip, { open: detailsOpen, news: hasAnomalyNews(status), onToggle: () => setDetailsOpen((v) => !v), t }),
             h('button', {
               className: 'ud-btn ud-btn--text ud-icon-btn', 'aria-label': t('refresh'), title: t('refresh'),
@@ -7553,16 +7637,7 @@ ${HUD_CSS}
           : null,
         error ? h('div', { className: 'ud-error' }, error) : null,
         loadingVisible ? h('div', { className: 'ud-loading', role: 'status', 'aria-busy': 'true', 'aria-label': t('loading') }) : null,
-        !workspaceView && cardsStats ? h(StatCards, { key: 'cards', stats: cardsStats, costCurrency, t }) : null,
-        workspaceView && stats && !emptyVisible
-          ? h(WorkspaceUsage, {
-              key: 'workspace-usage',
-              byWorkspace: Array.isArray(stats?.byWorkspace) ? stats.byWorkspace : [],
-              workspaces,
-              model: activeWorkspaceModel,
-              t,
-            })
-          : null,
+        cardsStats ? h(StatCards, { key: 'cards', stats: cardsStats, costCurrency, t }) : null,
         // 空范围只留一处说明:图表与模型榜在无数据时不渲染,避免空坐标系与空环
         emptyVisible ? h('div', { className: 'ud-empty' }, t('empty')) : null,
         // 活跃热力图仅按天视图展示:热力图口径为日桶,时/分视图无对应语义
@@ -7591,7 +7666,7 @@ ${HUD_CSS}
             })
           : null,
         !emptyVisible && usageModels ? h(ModelUsage, { key: 'models', models: usageModels, colorFor, costCurrency, t, onHoverModel: setHoverModel }) : null,
-        !workspaceView && cardsStats?.to ? h('div', { className: 'ud-foot' }, `${t('asOf')} ${slotLabelFor(view)(cardsStats.to)}`) : null,
+        cardsStats?.to ? h('div', { className: 'ud-foot' }, `${t('asOf')} ${slotLabelFor(view)(cardsStats.to)}`) : null,
         h('div', { className: 'ud-settings-stack' },
           h(StatsLineOptions, { key: 'prefs', t }),
           h(PricingSection, { key: 'pricing', t, rules: pricingRules, observed: cardsStats?.models, timeZone: serverTimeZone }),
@@ -8906,6 +8981,12 @@ ${HUD_CSS}
           ctx.slots.register(
             { name: 'settings.section', id: 'usage-dash', order: 45, label: () => ctx.locale.bind(LOCALE_NS)('nav'), locale: LOCALE_NS },
             UsageDashPanel,
+          ))
+        // 工作区对比是独立设置页,不占用用量统计的天/小时/分钟视图
+        ctx.slots.inject('settings.section', () =>
+          ctx.slots.register(
+            { name: 'settings.section', id: 'usage-workspaces', order: 46, label: () => ctx.locale.bind(LOCALE_NS)('workspaceNav'), locale: LOCALE_NS },
+            WorkspaceUsagePanel,
           ))
         // 两段式注册官方 dock 槽增强条目:宿主缺该插槽时注册抛错即禁用本功能;
         // order 2 排官方 activity(0)/usage(1) 之后,append 在官方数据后面

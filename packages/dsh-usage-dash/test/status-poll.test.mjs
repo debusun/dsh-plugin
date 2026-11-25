@@ -143,7 +143,10 @@ function fixture({ statuses = [], now, pointOk = false, deferRange = false, defe
     locale: { register() {} },
     slots: {
       inject: (_name, fn) => fn(),
-      register: (entry, component) => slots.set(entry.name, component),
+      register: (entry, component) => {
+        slots.set(`${entry.name}:${entry.id}`, component)
+        if (entry.name !== 'settings.section' || !slots.has(entry.name)) slots.set(entry.name, component)
+      },
     },
     configForms: { get: () => ({ getSnapshot: () => ({ value: undefined }), subscribe: () => () => {}, mutate: async () => true }) },
   })

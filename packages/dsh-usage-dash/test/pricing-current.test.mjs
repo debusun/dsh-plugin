@@ -64,7 +64,13 @@ function fixture({ observed = [], timeZone, time = new Date(2026, 10, 24, 9, 0).
     locale: { register() {} },
     // 宿主 client ctx 的反射取服务:本夹具没有 sessions 服务,面板按无子代理数据面降级
     get: () => undefined,
-    slots: { inject: (_name, fn) => fn(), register: (entry, component) => slots.set(entry.name, component) },
+    slots: {
+      inject: (_name, fn) => fn(),
+      register: (entry, component) => {
+        slots.set(`${entry.name}:${entry.id}`, component)
+        if (entry.name !== 'settings.section' || !slots.has(entry.name)) slots.set(entry.name, component)
+      },
+    },
     configForms: { get: () => ({ getSnapshot: () => ({ value: undefined }), subscribe: () => () => {}, mutate: async () => true }) },
   })
   const render = owner => {
@@ -82,6 +88,7 @@ function fixture({ observed = [], timeZone, time = new Date(2026, 10, 24, 9, 0).
     for (let i = 0; i < 12; i++) { await flush(); mounted.filter(owner => owner.alive && owner.dirty).forEach(render) }
   }
   const panel = () => mount(slots.get('settings.section'))
+  const workspacePanel = () => mount(slots.get('settings.section:usage-workspaces'))
   const editor = (tab = '规则视图') => {
     const p = panel()
     const section = nodes(p.tree).find(n => n.type?.name === 'PricingSection')
@@ -116,7 +123,7 @@ function fixture({ observed = [], timeZone, time = new Date(2026, 10, 24, 9, 0).
     const button = byText(owner, '保存')
     assert.ok(button, '已载入编辑器保存按钮'); return button.props.onClick()
   }
-  return { panel, editor, openCreate, openEdit, stats, chip, settle, unmount, requests, gets, saves, resolve, resolveError, save, mount, nodes, text, timers,
+  return { panel, workspacePanel, editor, openCreate, openEdit, stats, chip, settle, unmount, requests, gets, saves, resolve, resolveError, save, mount, nodes, text, timers,
     get lateState() { return lateState }, advance: ms => { now += ms }, cleanup: () => mounted.filter(o => o.alive).forEach(unmount) }
 }
 
@@ -349,6 +356,14 @@ test('P0 Given 使用统计设置页, When 渲染, Then 显示与增强和定价
   await f.settle()
   const pricingFoldOpen = f.nodes(pricing.tree).find(n => n.type?.name === 'SectionFold')
   assert.equal(pricingFoldOpen.props.open, true)
+}))
+
+test('Given 工作区用量入口 When 挂载 Then 使用独立设置分区且不混入统计视图', t => withFixture(t, async f => {
+  const page = f.workspacePanel()
+  assert.equal(page.component.name, 'WorkspaceUsagePanel')
+  assert.match(f.text(page.tree), /30 天/)
+  await f.settle()
+  assert.ok(f.nodes(page.tree).some(node => node.type?.name === 'WorkspaceUsage'))
 }))
 
 test('P1 Given concurrent consumers, When cold mounted, Then only one pricing GET is sent', t => withFixture(t, async f => {
