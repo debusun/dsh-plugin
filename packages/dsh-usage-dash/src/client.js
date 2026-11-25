@@ -956,7 +956,6 @@ const MESSAGES_ZH = {
   'pricing.cancel': '取消',
   'pricing.now': '此刻',
   'pricing.snapshot': '所选快照',
-  'pricing.estimateTime': '估算时点',
   'pricing.localSnapshot': '估算时点（{zone}）',
   'pricing.localZone': '本地时间',
   'pricing.providerSlash': '平台模式不能包含斜杠。请在型号字段输入带斜杠的型号。',
@@ -1298,7 +1297,6 @@ const MESSAGES_EN = {
   'pricing.cancel': 'Cancel',
   'pricing.now': 'Now',
   'pricing.snapshot': 'Selected snapshot',
-  'pricing.estimateTime': 'Estimate time',
   'pricing.localSnapshot': 'Estimate at ({zone})',
   'pricing.localZone': 'local time',
   'pricing.providerSlash': 'Provider patterns cannot contain a slash. Enter model names containing slashes in the model field.',
@@ -4206,7 +4204,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-pricing-search-input .ud-input{padding-inline-start:32px}
 .ud-pricing-clock-group{flex:none}
 .ud-pricing-toolbar>.ud-pricing-clock-group{margin-inline-start:auto}
-.ud-pricing-board .ud-pricing-clock-toggle{display:inline-flex;align-items:center;gap:6px;width:auto;height:28px;padding:0 10px;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px;border-radius:var(--dsw-radius-sm)}
+.ud-pricing-board .ud-pricing-clock-toggle{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm)}
 .ud-pricing-clock-toggle svg{width:15px;height:15px}
 .ud-pricing-board .ud-pricing-clock-toggle:is([aria-expanded=true],.ud-pricing-clock-toggle--active){color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 10%,transparent)}
 
@@ -6705,7 +6703,7 @@ ${HUD_CSS}
           'aria-label': clockLabel, title: clockLabel,
           'aria-expanded': clockOpen, 'aria-controls': `${boardId}-clock`,
           onClick: () => { if (!snapshot) setNow(Date.now()); setClockOpen(!clockOpen) },
-        }, h(Icon, { paths: ICONS.clock }), h('span', null, t('pricing.estimateTime'))))
+        }, h(Icon, { paths: ICONS.clock })))
       const currencyPicker = h('div', { className: 'ud-group', role: 'group', 'aria-label': t('pricingCurrency') },
         CURRENCIES.map((symbol) => h('button', {
           key: symbol, type: 'button',
