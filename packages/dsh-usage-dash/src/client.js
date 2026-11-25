@@ -1002,6 +1002,7 @@ const MESSAGES_ZH = {
   'pricing.close': '关闭',
   'pricing.fallbackRequired': '填写无条件的全局默认价（*/*）后再保存。',
   'pricing.disable': '停用定价',
+  'pricing.disableHint': '停用将清空全部规则，定价不再生效',
   'pricing.confirmDisable': '确认清空定价草稿',
   'pricing.invalidResponse': '保存失败，定价响应无效。',
   'pricing.validationSummary': '请检查标出的定价字段。',
@@ -1342,6 +1343,7 @@ const MESSAGES_EN = {
   'pricing.close': 'Close',
   'pricing.fallbackRequired': 'Enter an unconditional global fallback (*/*) before saving.',
   'pricing.disable': 'Disable pricing',
+  'pricing.disableHint': 'Disabling will clear all rules and turn pricing off',
   'pricing.confirmDisable': 'Confirm clearing pricing draft',
   'pricing.invalidResponse': 'Save failed because the pricing response was invalid.',
   'pricing.validationSummary': 'Review the highlighted pricing fields.',
@@ -4258,8 +4260,9 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__) {
 .ud-btn--danger-text.ud-delete-armed,.ud-btn--danger-text.ud-delete-armed:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-bg-base)}
 .ud-pricing-rule-tags{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-inline-start:auto}
 .ud-pricing-rule-tags .ud-pricing-icon{color:var(--dsw-alias-label-secondary)}
-.ud-pricing-danger-zone{justify-content:flex-end;padding-block-start:8px;border-top:.5px solid var(--ud-card-border)}
-.ud-pricing-danger-zone .ud-btn--danger-text{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:500}
+.ud-pricing-danger-zone{justify-content:space-between;gap:12px;padding:8px 12px 8px 20px;border-top:.5px solid var(--ud-card-border)}
+.ud-pricing-danger-hint{min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
+.ud-pricing-danger-zone .ud-btn--danger-text{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;margin-inline-start:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:500}
 .ud-pricing-danger-zone .ud-btn--danger-text::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--dsw-alias-state-error-primary);flex:none}
 .ud-pricing-danger-zone .ud-btn--danger-text:not(:disabled):not(.ud-delete-armed):hover{background:var(--dsw-alias-interactive-bg-hover-danger);border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 24%,var(--dsw-alias-border-l2));color:var(--dsw-alias-label-primary)}
 .ud-pricing-danger-zone .ud-btn--danger-text.ud-delete-armed,.ud-pricing-danger-zone .ud-btn--danger-text.ud-delete-armed:hover{background:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-bg-base)}
@@ -6290,7 +6293,7 @@ ${HUD_CSS}
           })) : null))
     }
 
-    function PricingRules({ analysis, rules, onEditRule, onJump, t }) {
+    function PricingRules({ analysis, rules, onEditRule, onJump, t, footer }) {
       const [detail, setDetail] = useState(null)
       const [expanded, setExpanded] = useState(() => new Set())
       const listId = React.useId()
@@ -6349,7 +6352,7 @@ ${HUD_CSS}
                     }, h(Icon, { paths: ICONS.edit })))),
                 h('div', { id: detailId, hidden: !open }, open ? h(PricingRuleDetails, { rule, stats, rules, t }) : null))
             }))
-        })),
+        }), footer),
         detail ? h(PricingRuleModels, { detail, analysis, rules, t, onClose: () => setDetail(null), onJump }) : null)
     }
 
@@ -6712,6 +6715,7 @@ ${HUD_CSS}
       const saveButton = h('button', { className: 'ud-btn ud-btn--primary', type: 'button', disabled: saving, onClick: save }, t('save'))
       const clearAll = currentRules.length > 0 && rules?.some((rule) => !isPricingFallback(rule) || !syntheticGlobalRef.current)
         ? h('div', { className: 'ud-pricing-line ud-pricing-danger-zone' },
+          h('span', { className: 'ud-pricing-danger-hint' }, t('pricing.disableHint')),
           h(DeleteArmedButton, {
             labelKey: 'pricing.disable', confirmKey: 'pricing.confirmDisable', showLabel: true, tone: 'danger', t,
             onConfirm: () => {
@@ -6740,8 +6744,8 @@ ${HUD_CSS}
             setSelectedModel(model)
             chooseTab('models')
           },
-        }),
-        clearAll)
+          footer: clearAll,
+        }))
       const editorPanel = !status && activeRule ? h(PricingRuleForm, {
         rule: activeRule, index: activeRuleIndex, creating: Boolean(ruleEditor.creating),
         locked: isPricingFallback(ruleEditor.baseline), currency, errors, t, saving, saveError, actions, clockToggle, clock,
