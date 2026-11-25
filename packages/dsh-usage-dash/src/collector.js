@@ -19,9 +19,26 @@ export function workspacePathKey(value) {
   return process.platform === 'win32' ? normalized.toLowerCase() : normalized
 }
 
+// 路径归属:先精确命中;未命中时取最长的已注册父目录,避免 /repo 吞掉
+// /repo-other,也避免外层工作区抢走嵌套工作区。路径键已统一分隔符与大小写。
+export function workspaceIdForPath(cwd, byPath) {
+  const key = workspacePathKey(cwd)
+  if (key === '') return undefined
+  let matched
+  let matchedLength = -1
+  for (const [base, workspaceId] of byPath ?? []) {
+    if (base === '' || base.length <= matchedLength) continue
+    if (key === base || key.startsWith(`${base}/`)) {
+      matched = workspaceId
+      matchedLength = base.length
+    }
+  }
+  return matched
+}
+
 // 工作区归属:优先用会话自身的注册结果;宿主不再枚举的旧档/孤儿会话虽不在
-// sessionIds 里,header.cwd 仍能唯一命中已注册工作区,按路径兜底。随后再沿
-// parentSession 回溯,覆盖子 agent 注册缓存尚未收录的首批用量。
+// sessionIds 里,header.cwd 仍能命中已注册工作区本身或其父目录,按路径兜底。
+// 随后再沿 parentSession 回溯,覆盖子 agent 注册缓存尚未收录的首批用量。
 export function workspaceIdForSession(sessionId, { bySession, headerOf, byPath } = {}) {
   const visited = new Set()
   let current = sessionId
@@ -30,7 +47,7 @@ export function workspaceIdForSession(sessionId, { bySession, headerOf, byPath }
     const direct = bySession?.get?.(current)
     if (direct !== undefined) return direct
     const header = headerOf?.(current)
-    const byCwd = byPath?.get?.(workspacePathKey(header?.cwd))
+    const byCwd = workspaceIdForPath(header?.cwd, byPath)
     if (byCwd !== undefined) return byCwd
     if (!isDerivedSessionHeader(header) || header.parentSession === undefined) break
     current = header.parentSession
