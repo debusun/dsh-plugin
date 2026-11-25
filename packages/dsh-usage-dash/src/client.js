@@ -6706,7 +6706,6 @@ ${HUD_CSS}
           'aria-expanded': clockOpen, 'aria-controls': `${boardId}-clock`,
           onClick: () => { if (!snapshot) setNow(Date.now()); setClockOpen(!clockOpen) },
         }, h(Icon, { paths: ICONS.clock }), h('span', null, t('pricing.estimateTime'))))
-      const controls = h('div', { className: 'ud-pricing-toolbar' }, tabList, tab === 'rules' && !ruleEditor ? clockToggle : null)
       const currencyPicker = h('div', { className: 'ud-group', role: 'group', 'aria-label': t('pricingCurrency') },
         CURRENCIES.map((symbol) => h('button', {
           key: symbol, type: 'button',
@@ -6718,6 +6717,16 @@ ${HUD_CSS}
           },
         }, symbol)))
       const saveButton = h('button', { className: 'ud-btn ud-btn--primary', type: 'button', disabled: saving, onClick: save }, t('save'))
+      const createButton = h('button', { type: 'button', className: 'ud-btn ud-pricing-create', onClick: openCreateRule },
+        h(Icon, { paths: ICONS.plus }), t('pricing.createRule'))
+      const controls = h('div', { className: 'ud-pricing-toolbar' },
+        tabList,
+        tab === 'rules' && !ruleEditor && !status ? createButton : null,
+        tab === 'rules' && !ruleEditor && !status
+          ? h('div', { className: 'ud-pricing-actions' },
+            saved ? h('span', { className: 'ud-pref-desc', role: 'status' }, t('saved')) : null,
+            clockToggle, currencyPicker, saveButton)
+          : null)
       const clearAll = currentRules.length > 0 && rules?.some((rule) => !isPricingFallback(rule) || !syntheticGlobalRef.current)
         ? h('div', { className: 'ud-pricing-line ud-pricing-danger-zone' },
           h('span', { className: 'ud-pricing-danger-hint' }, t('pricing.disableHint')),
@@ -6733,12 +6742,6 @@ ${HUD_CSS}
             },
           })) : null
       const listPanel = h('div', { className: 'ud-pricing-stack' },
-        h('div', { className: 'ud-pricing-toolrow' },
-          h('button', { type: 'button', className: 'ud-btn ud-pricing-create', onClick: openCreateRule },
-            h(Icon, { paths: ICONS.plus }), t('pricing.createRule')),
-          h('div', { className: 'ud-pricing-actions' },
-            saved ? h('span', { className: 'ud-pref-desc', role: 'status' }, t('saved')) : null,
-            currencyPicker, saveButton)),
         saveError || errors.size ? h('div', { className: 'ud-error', role: 'alert' }, saveError || t(errors.get('fallback') ?? 'pricing.validationSummary')) : null,
         h(PricingRules, {
           analysis, rules: rules ?? [], t, onEditRule: openEditRule,
