@@ -6826,18 +6826,36 @@ ${HUD_CSS}
           saveError ? h('p', { className: 'ud-error', role: 'alert' }, saveError) : null) : views[entry.id])))
     }
 
+    // 规则中能落到具体型号的条目:没有观察行时仍让模型视图可查看价格,
+    // 通配符规则无法还原成真实型号,不在这里伪造
+    function pricingRuleModels(rules) {
+      if (!Array.isArray(rules)) return []
+      const seen = new Set()
+      const rows = []
+      for (const rule of rules) {
+        const model = rule?.model
+        if (typeof model !== 'string' || model === MODEL_UNROUTED || model === OTHER_MODEL
+          || model.includes(MODEL_WILDCARD) || !isTwoSegmentModel(model) || seen.has(model)) continue
+        seen.add(model)
+        rows.push({ model })
+      }
+      return rows
+    }
+
     // 定价规则折叠区:编辑器保持挂载以保留草稿,折叠只隐藏 body
     function PricingSection({ rules = null, observed, timeZone, modelColors, t = defaultT }) {
       const [open, setOpen] = useState(false)
       const summary = !Array.isArray(rules) ? undefined
         : rules.length > 0 ? t('pricingRuleCount', { n: rules.length }) : t('pricingNotConfigured')
+      // 用量范围为空(含切到无数据工作区)时回落到规则型号,避免有规则却整块空白
+      const effectiveObserved = observed?.length ? observed : pricingRuleModels(rules)
       return h(SectionFold, {
         title: t('pricing'),
         description: t('pricingSectionDesc'),
         summary,
         open,
         onToggle: () => setOpen((value) => !value),
-      }, h(PricingEditor, { t, open, publishedRules: rules, observed, timeZone, modelColors }))
+      }, h(PricingEditor, { t, open, publishedRules: rules, observed: effectiveObserved, timeZone, modelColors }))
     }
 
     // 扫描异常日志入口:仅箭头标识,明细在展开的日志块中展示;

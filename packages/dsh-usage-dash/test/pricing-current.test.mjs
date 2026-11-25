@@ -183,6 +183,14 @@ const enterPattern = async (f, editor, provider, model) => {
   changeInput(modelPattern(editor), model); await f.settle()
 }
 
+test('Given 有具体型号规则但无观察行 When 渲染定价折叠区 Then 用规则型号填充模型视图', t => withFixture(t, async f => {
+  const panel = f.panel()
+  f.resolve(f.gets[0], { revision: 1, rules: [{ ...rule(5), model: 'p/m' }] }); await f.settle()
+  const section = byComponent(panel, 'PricingSection')
+  const fold = f.mount(section.type, section.props)
+  assert.deepEqual(byComponent(fold, 'PricingEditor').props.observed, [{ model: 'p/m' }])
+}, { observed: [] }))
+
 test('Given 聚合返回观察行 When 渲染定价折叠区 Then 将完整观察行透传', t => withFixture(t, async f => {
   const panel = f.panel()
   f.resolve(f.gets[0], price(1)); await f.settle()
